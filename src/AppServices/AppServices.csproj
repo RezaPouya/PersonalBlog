@@ -7,8 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Admin\Tags\Delete\" />
+    <Folder Include="Admin\Tags\Grid\" />
+    <Folder Include="Admin\Tags\Read\" />
+    <Folder Include="Admin\Tags\Update\" />
     <Folder Include="Commons\" />
-    <Folder Include="Site\" />
+    <Folder Include="Site\Categories\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,79 @@
+@page "/admin/categories"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.Categories.Grid
+@using AppServices.Base
+@using PersonalBlog.Utilities.Dtos
+@inject IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<GetCategoryGridResult>> GridHandler
+
+<PageTitle>دسته‌بندی‌ها | ادمین</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">مدیریت دسته‌بندی‌ها</h1>
+    <button class="btn btn-success" @onclick="ShowCreate">+ جدید</button>
+</div>
+
+@if (_loading)
+{
+    <p>در حال بارگذاری...</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>شناسه</th>
+                    <th>عنوان</th>
+                    <th>انگلیسی</th>
+                    <th>تعداد پست</th>
+                    <th>تاریخ ایجاد</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _items)
+                {
+                    <tr>
+                        <td>@item.Id</td>
+                        <td>@item.Title</td>
+                        <td>@(item.IsInEnglish ? "بله" : "خیر")</td>
+                        <td>@item.PostsCount</td>
+                        <td>@item.CreatedAtPersian</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary">ویرایش</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<GetCategoryGridResult> _items = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await GridHandler.Invoke(new GetCategoryListAsGridQuery
+            {
+                Page = 1,
+                PageSize = 50
+            }, CancellationToken.None);
+            _items = result.Data?.ToList() ?? new();
+        }
+        catch
+        {
+            _items = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ShowCreate() { /* TODO: modal or navigate */ }
+}

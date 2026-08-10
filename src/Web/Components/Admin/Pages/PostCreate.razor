@@ -1,0 +1,152 @@
+@page "/admin/posts/create"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.Posts.Create
+@using AppServices.Admin.Lookups
+@using AppServices.Base
+@inject ICommandHandler<CreatePostCommand, int> CreateHandler
+@inject IQueryHandler<GetCategoriesLookupQuery, List<CategoryLookupItem>> CategoriesLookup
+@inject IQueryHandler<GetTagsLookupQuery, List<TagLookupItem>> TagsLookup
+@inject NavigationManager Nav
+
+<PageTitle>ایجاد مطلب | ادمین</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">ایجاد مطلب جدید</h1>
+    <a href="/admin/posts" class="btn btn-outline-secondary">بازگشت</a>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<EditForm Model="_model" OnValidSubmit="Submit" class="card shadow-sm">
+    <DataAnnotationsValidator />
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">عنوان *</label>
+                <InputText class="form-control" @bind-Value="_model.Title" />
+                <ValidationMessage For="() => _model.Title" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">اسلاگ *</label>
+                <InputText class="form-control" @bind-Value="_model.Slug" dir="ltr" />
+                <ValidationMessage For="() => _model.Slug" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">خلاصه *</label>
+                <InputTextArea class="form-control" rows="2" @bind-Value="_model.Summary" />
+                <ValidationMessage For="() => _model.Summary" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">محتوا (HTML) *</label>
+                <InputTextArea class="form-control font-monospace" rows="12" @bind-Value="_model.Content" dir="auto" />
+                <ValidationMessage For="() => _model.Content" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">دسته‌بندی *</label>
+                <InputSelect class="form-select" @bind-Value="_model.CategoryId">
+                    <option value="0">انتخاب کنید...</option>
+                    @foreach (var c in _categories)
+                    {
+                        <option value="@c.Id">@c.Title</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => _model.CategoryId" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">آدرس تصویر کاور</label>
+                <InputText class="form-control" @bind-Value="_model.CoverImageUrl" dir="ltr" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Meta Title</label>
+                <InputText class="form-control" @bind-Value="_model.MetaTitle" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Meta Description</label>
+                <InputText class="form-control" @bind-Value="_model.MetaDescription" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">برچسب‌ها</label>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var t in _tags)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="tag-@t.Id"
+                                   checked="@_selectedTagIds.Contains(t.Id)"
+                                   @onchange="e => ToggleTag(t.Id, (bool)(e.Value ?? false))" />
+                            <label class="form-check-label" for="tag-@t.Id">@t.Title</label>
+                        </div>
+                    }
+                    @if (_tags.Count == 0)
+                    {
+                        <span class="text-muted small">برچسبی تعریف نشده.</span>
+                    }
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="form-check form-check-inline">
+                    <InputCheckbox class="form-check-input" @bind-Value="_model.IsPublished" id="pub" />
+                    <label class="form-check-label" for="pub">منتشر شود</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <InputCheckbox class="form-check-input" @bind-Value="_model.IsCommentsEnabled" id="cmt" />
+                    <label class="form-check-label" for="cmt">نظرات فعال</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <InputCheckbox class="form-check-input" @bind-Value="_model.IsInEnglish" id="en" />
+                    <label class="form-check-label" for="en">انگلیسی</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@_saving">
+            @(_saving ? "در حال ذخیره..." : "ذخیره")
+        </button>
+        <a href="/admin/posts" class="btn btn-light">انصراف</a>
+    </div>
+</EditForm>
+
+@code {
+    private CreatePostCommand _model = new() { IsCommentsEnabled = true };
+    private List<CategoryLookupItem> _categories = new();
+    private List<TagLookupItem> _tags = new();
+    private HashSet<int> _selectedTagIds = new();
+    private bool _saving;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _categories = await CategoriesLookup.Invoke(new GetCategoriesLookupQuery(), CancellationToken.None);
+        _tags = await TagsLookup.Invoke(new GetTagsLookupQuery(), CancellationToken.None);
+    }
+
+    private void ToggleTag(int id, bool selected)
+    {
+        if (selected) _selectedTagIds.Add(id);
+        else _selectedTagIds.Remove(id);
+    }
+
+    private async Task Submit()
+    {
+        _saving = true;
+        _error = null;
+        try
+        {
+            _model.TagIds = _selectedTagIds.ToList();
+            var id = await CreateHandler.Invoke(_model, CancellationToken.None);
+            Nav.NavigateTo($"/admin/posts/edit/{id}");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

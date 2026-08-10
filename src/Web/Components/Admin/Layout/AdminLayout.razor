@@ -1,0 +1,30 @@
+@inherits LayoutComponentBase
+
+<div class="d-flex" style="min-height: 100vh;">
+    <nav class="bg-dark text-white p-3 flex-shrink-0" style="width: 240px;">
+        <div class="mb-4">
+            <h5 class="mb-0">پنل ادمین</h5>
+            <small class="text-white-50">Personal Blog</small>
+        </div>
+        <ul class="nav flex-column gap-1">
+            <li class="nav-item">
+                <a class="nav-link text-white rounded px-3 py-2" href="/admin">داشبورد</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white rounded px-3 py-2" href="/admin/categories">دسته‌بندی‌ها</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white rounded px-3 py-2" href="/admin/posts">مطالب</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white rounded px-3 py-2" href="/admin/tags">برچسب‌ها</a>
+            </li>
+            <li class="nav-item mt-4">
+                <a class="nav-link text-white-50 rounded px-3 py-2" href="/">← بازگشت به سایت</a>
+            </li>
+        </ul>
+    </nav>
+    <main class="flex-grow-1 bg-light p-4">
+        @Body
+    </main>
+</div>

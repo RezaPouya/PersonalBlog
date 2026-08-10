@@ -1,0 +1,37 @@
+@page "/admin"
+@page "/admin/dashboard"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+
+<PageTitle>داشبورد | ادمین</PageTitle>
+
+<h1 class="mb-4">داشبورد مدیریت</h1>
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">دسته‌بندی‌ها</h5>
+                <p class="card-text text-muted">مدیریت دسته‌بندی‌های مطالب</p>
+                <a href="/admin/categories" class="btn btn-primary btn-sm">مشاهده</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">مطالب</h5>
+                <p class="card-text text-muted">ایجاد و ویرایش پست‌ها</p>
+                <a href="/admin/posts" class="btn btn-primary btn-sm">مشاهده</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">برچسب‌ها</h5>
+                <p class="card-text text-muted">مدیریت تگ‌ها</p>
+                <a href="/admin/tags" class="btn btn-primary btn-sm">مشاهده</a>
+            </div>
+        </div>
+    </div>
+</div>

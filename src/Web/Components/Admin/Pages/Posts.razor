@@ -1,0 +1,171 @@
+@page "/admin/posts"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.Posts.Grid
+@using AppServices.Admin.Posts.Delete
+@using AppServices.Base
+@using PersonalBlog.Utilities.Dtos
+@inject IQueryHandler<GetPostListAsGridQuery, GridDataSourceResult<GetPostGridResult>> GridHandler
+@inject ICommandHandler<DeletePostCommand, int> DeleteHandler
+@inject NavigationManager Nav
+
+<PageTitle>مطالب | ادمین</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="h3 mb-0">مدیریت مطالب</h1>
+    <a href="/admin/posts/create" class="btn btn-success">+ مطلب جدید</a>
+</div>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+    </div>
+}
+
+@if (_loading)
+{
+    <div class="text-center py-5 text-muted">در حال بارگذاری...</div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:60px">#</th>
+                            <th>عنوان</th>
+                            <th>دسته‌بندی</th>
+                            <th>وضعیت</th>
+                            <th>بازدید</th>
+                            <th>تاریخ</th>
+                            <th style="width:160px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_items.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">مطلبی ثبت نشده است.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in _items)
+                            {
+                                <tr>
+                                    <td>@item.Id</td>
+                                    <td>
+                                        <div class="fw-semibold">@item.Title</div>
+                                        <small class="text-muted">@item.Slug</small>
+                                    </td>
+                                    <td>@item.CategoryTitle</td>
+                                    <td>
+                                        @if (item.IsPublished)
+                                        {
+                                            <span class="badge bg-success">منتشر شده</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">پیش‌نویس</span>
+                                        }
+                                        @if (item.IsInEnglish)
+                                        {
+                                            <span class="badge bg-info text-dark">EN</span>
+                                        }
+                                    </td>
+                                    <td>@item.ViewCount</td>
+                                    <td>
+                                        <small>@item.CreatedAtPersian</small>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <a class="btn btn-sm btn-outline-primary" href="/admin/posts/edit/@item.Id">ویرایش</a>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item)" disabled="@_deleting">حذف</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if (_totalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <small class="text-muted">جمع: @_totals مورد</small>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" disabled="@(_page <= 1)" @onclick="() => LoadPage(_page - 1)">قبلی</button>
+                    <span class="btn btn-outline-secondary disabled">@_page / @_totalPages</span>
+                    <button class="btn btn-outline-secondary" disabled="@(_page >= _totalPages)" @onclick="() => LoadPage(_page + 1)">بعدی</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<GetPostGridResult> _items = new();
+    private bool _loading = true;
+    private bool _deleting;
+    private int _page = 1;
+    private int _pageSize = 15;
+    private int _totalPages;
+    private int _totals;
+    private string? _message;
+    private bool _isError;
+
+    protected override async Task OnInitializedAsync() => await LoadPage(1);
+
+    private async Task LoadPage(int page)
+    {
+        _loading = true;
+        _page = page;
+        try
+        {
+            var result = await GridHandler.Invoke(new GetPostListAsGridQuery
+            {
+                Page = _page,
+                PageSize = _pageSize
+            }, CancellationToken.None);
+
+            _items = result.Data?.ToList() ?? new();
+            _totalPages = result.TotalPages;
+            _totals = result.Totals;
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+            _items = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ConfirmDelete(GetPostGridResult item)
+    {
+        if (!await Task.FromResult(true)) return; // UI confirm simplified
+        _deleting = true;
+        try
+        {
+            await DeleteHandler.Invoke(new DeletePostCommand { Id = item.Id }, CancellationToken.None);
+            _message = $"مطلب «{item.Title}» حذف شد.";
+            _isError = false;
+            await LoadPage(_page);
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+        finally
+        {
+            _deleting = false;
+        }
+    }
+}

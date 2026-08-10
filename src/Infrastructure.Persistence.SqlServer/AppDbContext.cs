@@ -1,6 +1,12 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using PersonalBlog.Domain.Entities;
 using PersonalBlog.Domain.Entities.Categories;
+using PersonalBlog.Domain.Entities.ContactMessages;
+using PersonalBlog.Domain.Entities.Courses;
+using PersonalBlog.Domain.Entities.Posts;
+using PersonalBlog.Domain.Entities.Posts.Entities;
+using PersonalBlog.Domain.Entities.Projects;
+using PersonalBlog.Domain.Entities.Tags;
 using PersonalBlog.Domain.Exceptions;
 
 namespace Infrastructure.Persistence.SqlServer;

@@ -1,6 +1,7 @@
 using PersonalBlog.Domain.Commons.Base;
+using PersonalBlog.Domain.Entities.Posts;
 
-namespace PersonalBlog.Domain.Entities;
+namespace PersonalBlog.Domain.Entities.Courses;
 
 public class CoursePost : EntityBase
 {

@@ -1,0 +1,80 @@
+@inherits LayoutComponentBase
+@inject IJSRuntime JS
+
+<div class="site-wrapper @(_isDark ? "dark" : "")" data-theme="@(_isDark ? "dark" : "light")">
+    <header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="/" class="text-xl font-bold text-sky-600 dark:text-sky-400">وبلاگ شخصی</a>
+            <div class="flex items-center gap-3">
+                <button type="button" @onclick="ToggleTheme" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition" aria-label="تغییر قالب">
+                    @if (_isDark)
+                    {
+                        <span>☀️</span>
+                    }
+                    else
+                    {
+                        <span>🌙</span>
+                    }
+                </button>
+                <button type="button" @onclick="ToggleMenu" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden" aria-label="منو">
+                    ☰
+                </button>
+            </div>
+        </div>
+        @if (_menuOpen)
+        {
+            <nav class="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 space-y-2">
+                <a href="/" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">خانه</a>
+                <a href="/posts" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">مطالب</a>
+                <a href="/about" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">درباره من</a>
+            </nav>
+        }
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 py-6 min-h-[70vh]">
+        @Body
+    </main>
+
+    <footer class="border-t border-gray-200 dark:border-gray-700 mt-12 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div class="max-w-3xl mx-auto px-4">
+            <p>© @DateTime.Now.Year وبلاگ شخصی — همه حقوق محفوظ است.</p>
+        </div>
+    </footer>
+</div>
+
+@code {
+    private bool _isDark;
+    private bool _menuOpen;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var theme = await JS.InvokeAsync<string>("eval", "localStorage.getItem('theme') || 'light'");
+                _isDark = theme == "dark";
+                await ApplyThemeClass();
+                StateHasChanged();
+            }
+            catch { }
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDark = !_isDark;
+        await JS.InvokeVoidAsync("eval", $"localStorage.setItem('theme', '{(_isDark ? "dark" : "light")}')");
+        await ApplyThemeClass();
+    }
+
+    private async Task ApplyThemeClass()
+    {
+        await JS.InvokeVoidAsync("eval", _isDark
+            ? "document.documentElement.classList.add('dark')"
+            : "document.documentElement.classList.remove('dark')");
+    }
+
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+    private void CloseMenu() => _menuOpen = false;
+}

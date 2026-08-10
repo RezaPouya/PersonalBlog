@@ -1,0 +1,212 @@
+@page "/admin/posts/edit/{Id:int}"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.Posts.Read
+@using AppServices.Admin.Posts.Update
+@using AppServices.Admin.Lookups
+@using AppServices.Base
+@inject IQueryHandler<GetPostQuery, GetPostResult> GetHandler
+@inject ICommandHandler<UpdatePostCommand, int> UpdateHandler
+@inject IQueryHandler<GetCategoriesLookupQuery, List<CategoryLookupItem>> CategoriesLookup
+@inject IQueryHandler<GetTagsLookupQuery, List<TagLookupItem>> TagsLookup
+@inject NavigationManager Nav
+
+<PageTitle>ویرایش مطلب | ادمین</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">ویرایش مطلب</h1>
+    <a href="/admin/posts" class="btn btn-outline-secondary">بازگشت</a>
+</div>
+
+@if (_loading)
+{
+    <div class="text-center py-5 text-muted">در حال بارگذاری...</div>
+}
+else if (_model is null)
+{
+    <div class="alert alert-warning">مطلب یافت نشد. <a href="/admin/posts">بازگشت</a></div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success">@_success</div>
+    }
+
+    <EditForm Model="_model" OnValidSubmit="Submit" class="card shadow-sm">
+        <DataAnnotationsValidator />
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">عنوان *</label>
+                    <InputText class="form-control" @bind-Value="_model.Title" />
+                    <ValidationMessage For="() => _model.Title" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">اسلاگ *</label>
+                    <InputText class="form-control" @bind-Value="_model.Slug" dir="ltr" />
+                    <ValidationMessage For="() => _model.Slug" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label">خلاصه *</label>
+                    <InputTextArea class="form-control" rows="2" @bind-Value="_model.Summary" />
+                    <ValidationMessage For="() => _model.Summary" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label">محتوا (HTML) *</label>
+                    <InputTextArea class="form-control font-monospace" rows="12" @bind-Value="_model.Content" dir="auto" />
+                    <ValidationMessage For="() => _model.Content" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">دسته‌بندی *</label>
+                    <InputSelect class="form-select" @bind-Value="_model.CategoryId">
+                        <option value="0">انتخاب کنید...</option>
+                        @foreach (var c in _categories)
+                        {
+                            <option value="@c.Id">@c.Title</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">آدرس تصویر کاور</label>
+                    <InputText class="form-control" @bind-Value="_model.CoverImageUrl" dir="ltr" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Meta Title</label>
+                    <InputText class="form-control" @bind-Value="_model.MetaTitle" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Meta Description</label>
+                    <InputText class="form-control" @bind-Value="_model.MetaDescription" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label">برچسب‌ها</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var t in _tags)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="etag-@t.Id"
+                                       checked="@_selectedTagIds.Contains(t.Id)"
+                                       @onchange="e => ToggleTag(t.Id, (bool)(e.Value ?? false))" />
+                                <label class="form-check-label" for="etag-@t.Id">@t.Title</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-check form-check-inline">
+                        <InputCheckbox class="form-check-input" @bind-Value="_model.IsPublished" id="epub" />
+                        <label class="form-check-label" for="epub">منتشر شود</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <InputCheckbox class="form-check-input" @bind-Value="_model.IsCommentsEnabled" id="ecmt" />
+                        <label class="form-check-label" for="ecmt">نظرات فعال</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <InputCheckbox class="form-check-input" @bind-Value="_model.IsInEnglish" id="een" />
+                        <label class="form-check-label" for="een">انگلیسی</label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <small class="text-muted">بازدید: @_viewCount | TinyUrl: @_tinyUrl</small>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@_saving">
+                @(_saving ? "در حال ذخیره..." : "ذخیره تغییرات")
+            </button>
+            <a href="/admin/posts" class="btn btn-light">انصراف</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private UpdatePostCommand? _model;
+    private List<CategoryLookupItem> _categories = new();
+    private List<TagLookupItem> _tags = new();
+    private HashSet<int> _selectedTagIds = new();
+    private bool _loading = true;
+    private bool _saving;
+    private string? _error;
+    private string? _success;
+    private int _viewCount;
+    private string _tinyUrl = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _error = null;
+        _success = null;
+        try
+        {
+            _categories = await CategoriesLookup.Invoke(new GetCategoriesLookupQuery(), CancellationToken.None);
+            _tags = await TagsLookup.Invoke(new GetTagsLookupQuery(), CancellationToken.None);
+
+            var post = await GetHandler.Invoke(new GetPostQuery { Id = Id }, CancellationToken.None);
+            _model = new UpdatePostCommand
+            {
+                Id = post.Id,
+                Title = post.Title,
+                Slug = post.Slug,
+                Summary = post.Summary,
+                Content = post.Content,
+                CoverImageUrl = post.CoverImageUrl,
+                CategoryId = post.CategoryId,
+                IsPublished = post.IsPublished,
+                IsCommentsEnabled = post.IsCommentsEnabled,
+                IsInEnglish = post.IsInEnglish,
+                MetaTitle = post.MetaTitle,
+                MetaDescription = post.MetaDescription,
+                OgImageUrl = post.OgImageUrl,
+                TagIds = post.TagIds
+            };
+            _selectedTagIds = post.TagIds.ToHashSet();
+            _viewCount = post.ViewCount;
+            _tinyUrl = post.TinyUrl;
+        }
+        catch (Exception ex)
+        {
+            _model = null;
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ToggleTag(int id, bool selected)
+    {
+        if (selected) _selectedTagIds.Add(id);
+        else _selectedTagIds.Remove(id);
+    }
+
+    private async Task Submit()
+    {
+        if (_model is null) return;
+        _saving = true;
+        _error = null;
+        _success = null;
+        try
+        {
+            _model.TagIds = _selectedTagIds.ToList();
+            await UpdateHandler.Invoke(_model, CancellationToken.None);
+            _success = "تغییرات ذخیره شد.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -1,6 +1,4 @@
-using PersonalBlog.Domain.Commons.Base;
-
-namespace PersonalBlog.Domain.Entities;
+namespace PersonalBlog.Domain.Entities.Projects;
 
 public class Project : EntityBase
 {
@@ -19,6 +17,5 @@ public class Project : EntityBase
     public string? TechnologiesCsv { get; set; }   // مثال: "Blazor,EF Core,SQL Server"
     public int OrderInProjects { get; set; }
     public bool IsFeatured { get; set; }
-
     public bool IsInEnglish { get; set; }
 }

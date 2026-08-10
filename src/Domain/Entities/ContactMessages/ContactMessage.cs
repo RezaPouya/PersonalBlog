@@ -1,6 +1,6 @@
 using PersonalBlog.Domain.Commons.Base;
 
-namespace PersonalBlog.Domain.Entities;
+namespace PersonalBlog.Domain.Entities.ContactMessages;
 
 public class ContactMessage : EntityBase
 {

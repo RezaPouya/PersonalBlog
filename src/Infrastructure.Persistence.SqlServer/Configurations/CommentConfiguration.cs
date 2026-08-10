@@ -1,6 +1,6 @@
 using Infrastructure.Persistence.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using PersonalBlog.Domain.Entities;
+using PersonalBlog.Domain.Entities.Posts;
 
 namespace Infrastructure.Persistence.SqlServer.Configurations;
 

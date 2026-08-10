@@ -1,6 +1,6 @@
-using PersonalBlog.Domain.Commons.Base;
+using PersonalBlog.Domain.Entities.Tags;
 
-namespace PersonalBlog.Domain.Entities;
+namespace PersonalBlog.Domain.Entities.Posts.Entities;
 
 /// <summary>جدول واسط چند-به-چند بین Post و Tag.</summary>
 public class PostTag : EntityBase

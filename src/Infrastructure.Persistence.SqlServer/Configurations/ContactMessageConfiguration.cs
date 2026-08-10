@@ -1,6 +1,6 @@
 using Infrastructure.Persistence.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using PersonalBlog.Domain.Entities;
+using PersonalBlog.Domain.Entities.ContactMessages;
 
 namespace Infrastructure.Persistence.SqlServer.Configurations;
 

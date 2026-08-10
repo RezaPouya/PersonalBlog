@@ -1,6 +1,4 @@
-using PersonalBlog.Domain.Commons.Base;
-
-namespace PersonalBlog.Domain.Entities;
+namespace PersonalBlog.Domain.Entities.Posts.Entities;
 
 /// <summary>
 /// ثبت جزئیات هر بازدید؛ فیلدهای مرورگر/سیستم‌عامل/دستگاه با UAParser استخراج می‌شوند.
