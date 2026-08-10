@@ -8,7 +8,7 @@ public class RepositoryBase<TEntity>(AppDbContext dbContext) : IRepository<TEnti
 {
     protected readonly AppDbContext DbContext = dbContext;
 
-    public void Add(TEntity entity) => DbContext.Set<TEntity>().Add(entity);
+    public void Create(TEntity entity) => DbContext.Set<TEntity>().Add(entity);
 
     public virtual void Update(TEntity entity) => DbContext.Set<TEntity>().Update(entity);
 

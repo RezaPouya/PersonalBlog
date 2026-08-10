@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using PersonalBlog.Domain.Entities;
+using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Exceptions;
 
 namespace Infrastructure.Persistance.SqlServer;

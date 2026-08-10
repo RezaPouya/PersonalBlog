@@ -3,6 +3,7 @@
     <Project Path="src/Infrastructure.Persistance.SqlServer.Migrator/Infrastructure.Persistance.SqlServer.Migrator.csproj" Id="0c6ba859-2d4a-4780-9023-92a5ec9b809e" />
     <Project Path="src/Infrastructure.Persistance.SqlServer/Infrastructure.Persistance.SqlServer.csproj" Id="9f497901-b5ee-4b71-affb-0baba1eae562" />
   </Folder>
+  <Project Path="src/AppServices/AppServices.csproj" Id="791e01db-dee3-494c-a490-449f9a91a571" />
   <Project Path="src/Domain/Domain.csproj" />
   <Project Path="src/Utilities/Utilities.csproj" />
 </Solution>

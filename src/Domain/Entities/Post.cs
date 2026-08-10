@@ -1,4 +1,5 @@
 using PersonalBlog.Domain.Commons.Base;
+using PersonalBlog.Domain.Entities.Categories;
 
 namespace PersonalBlog.Domain.Entities;
 

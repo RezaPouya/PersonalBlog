@@ -2,6 +2,7 @@ global using Infrastructure.Persistance.SqlServer.CacheManagement;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using PersonalBlog.Domain.Entities.Identities;
+using AppServices.Options;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PersonalBlog.Domain.Commons;
 
@@ -13,6 +14,12 @@ public static class DependencyInjectionExtensions
     {
         var connectionString = configuration.GetConnectionString("DatabaseConnection")
             ?? throw new InvalidOperationException("Connection string 'DatabaseConnection' not found.");
+
+        services.AddSingleton(new DbOptions
+        {
+            ConnectionString = connectionString,
+        });
+
 
         services.TryAddTransient<AppDbContextSaveChangesInterceptor>();
 
