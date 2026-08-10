@@ -7,16 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Admin\Categories\Delete\" />
-    <Folder Include="Admin\Categories\Grid\" />
-    <Folder Include="Admin\Categories\Read\" />
-    <Folder Include="Admin\Categories\Update\" />
     <Folder Include="Commons\" />
     <Folder Include="Site\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+
   </ItemGroup>
 
   <ItemGroup>

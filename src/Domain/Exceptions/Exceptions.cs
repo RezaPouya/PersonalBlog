@@ -1,12 +1,12 @@
 ﻿namespace PersonalBlog.Domain.Exceptions;
 
-public class BussinessException : Exception
+public class BusinessException : Exception
 {
-    public BussinessException(string message) : base(message)
+    public BusinessException(string message) : base(message)
     {
     }
 
-    public BussinessException(string message, Exception innerException) : base(message, innerException)
+    public BusinessException(string message, Exception innerException) : base(message, innerException)
     {
     }
 }
