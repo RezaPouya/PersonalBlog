@@ -4,11 +4,6 @@ using PersonalBlog.Domain.Exceptions;
 
 namespace Infrastructure.Persistance.SqlServer;
 
-/// <summary>
-/// هم‌ساختار با AppDbContext پروژه‌ی نمونه: IdentityDbContext با کلید long.
-/// چون فقط یک نقش (Admin) داریم، از کلیدهای پیش‌فرض Identity (بدون سفارشی‌سازی
-/// AppUserClaim/AppUserRole و ...) استفاده شده تا ساده بماند.
-/// </summary>
 public class AppDbContext(DbContextOptions<AppDbContext> options)
     : IdentityDbContext<AppUser, AppRole, int>(options)
 {

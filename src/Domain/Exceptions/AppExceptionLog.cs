@@ -1,10 +1,14 @@
-using PersonalBlog.Domain.Commons.Base;
-
 namespace PersonalBlog.Domain.Exceptions;
 
-public class AppExceptionLog : EntityBase
+public class AppExceptionLog
 {
-    public long Id { get; set; }
+    public AppExceptionLog()
+    {
+        this.CreatedAt = DateTime.Now;
+    }
+
+    public int Id { get; set; }
+    public DateTime CreatedAt { get; set; }
     public string Message { get; set; } = default!;
     public string? ExceptionType { get; set; }
     public string? StackTrace { get; set; }
@@ -12,5 +16,5 @@ public class AppExceptionLog : EntityBase
     public string? RequestPath { get; set; }
     public string? IpAddress { get; set; }
     public string? UserAgent { get; set; }
-    public long? UserId { get; set; }
+    public int? UserId { get; set; }
 }

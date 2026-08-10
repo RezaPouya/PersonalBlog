@@ -10,7 +10,7 @@ public static class EntityBaseConfiguration
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).ValueGeneratedOnAdd();
         builder.Property(p => p.CreatedAt).IsRequired();
-        builder.Property(p => p.UpdatedAt).IsRequired(false);
+        builder.Property(p => p.UpdatedAt).IsRequired();
     }
 
     public static void ConfigureSoftwareDeletable<TEntity>(this EntityTypeBuilder<TEntity> builder) where TEntity : class, ISoftDelete

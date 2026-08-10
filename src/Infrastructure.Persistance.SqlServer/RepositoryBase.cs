@@ -19,12 +19,12 @@ public class RepositoryBase<TEntity>(AppDbContext dbContext) : IRepository<TEnti
 
     public void Delete(TEntity entity) => DbContext.Set<TEntity>().Remove(entity);
 
-    public async Task<TEntity?> FindByIdAsync(long id) => await DbContext.Set<TEntity>().FindAsync(id);
+    public async Task<TEntity?> FindByIdAsync(int id) => await DbContext.Set<TEntity>().FindAsync(id);
 
-    public async Task<TEntity?> GetByIdAsync(long id) =>
+    public async Task<TEntity?> GetByIdAsync(int id) =>
         await DbContext.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
 
-    public async Task<bool> IsExistsByIdAsync(long id) =>
+    public async Task<bool> IsExistsByIdAsync(int id) =>
         await DbContext.Set<TEntity>().AnyAsync(x => x.Id == id);
 
     public IQueryable<TEntity> Query(bool asNoTracking = true)

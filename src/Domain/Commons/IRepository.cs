@@ -9,9 +9,9 @@ public interface IRepository<TEntity> where TEntity : EntityBase
     void SetUpdatedAt(TEntity entity);
     void Delete(TEntity entity);
 
-    Task<TEntity?> FindByIdAsync(long id);
-    Task<TEntity?> GetByIdAsync(long id);
-    Task<bool> IsExistsByIdAsync(long id);
+    Task<TEntity?> FindByIdAsync(int id);
+    Task<TEntity?> GetByIdAsync(int id);
+    Task<bool> IsExistsByIdAsync(int id);
 
     IQueryable<TEntity> Query(bool asNoTracking = true);
 }

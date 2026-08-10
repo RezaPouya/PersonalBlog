@@ -1,4 +1,3 @@
-using Infrastructure.Persistance.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PersonalBlog.Domain.Exceptions;
 
@@ -9,7 +8,9 @@ public class AppExceptionLogConfiguration : IEntityTypeConfiguration<AppExceptio
     public void Configure(EntityTypeBuilder<AppExceptionLog> builder)
     {
         builder.ToTable("AppExceptionLogs");
-        builder.ConfigureEntityBase<AppExceptionLog>();
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).ValueGeneratedOnAdd();
+        builder.Property(p => p.CreatedAt).IsRequired();
         builder.Property(e => e.Message).IsRequired();
         builder.Property(e => e.ExceptionType).HasMaxLength(300);
         builder.Property(e => e.Source).HasMaxLength(300);

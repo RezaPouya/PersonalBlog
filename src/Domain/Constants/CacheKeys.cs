@@ -11,6 +11,6 @@ public static class CacheKeys
     public const string SocialLinks = "cache:settings:social-links";
 
     public static string PostBySlug(string slug) => $"cache:post:{slug}";
-    public static string PostsByCategory(long categoryId) => $"cache:posts:category:{categoryId}";
-    public static string PostsByTag(long tagId) => $"cache:posts:tag:{tagId}";
+    public static string PostsByCategory(int categoryId) => $"cache:posts:category:{categoryId}";
+    public static string PostsByTag(int tagId) => $"cache:posts:tag:{tagId}";
 }

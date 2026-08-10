@@ -21,7 +21,7 @@ public class Post : EntityBase, ISoftDelete
 
     public int ViewCount { get; set; }
 
-    public long CategoryId { get; set; }
+    public int CategoryId { get; set; }
     public Category Category { get; set; } = default!;
 
 

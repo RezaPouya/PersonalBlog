@@ -7,7 +7,7 @@ namespace PersonalBlog.Domain.Entities;
 /// </summary>
 public class PostVisit : EntityBase
 {
-    public long PostId { get; set; }
+    public int PostId { get; set; }
     public Post Post { get; set; } = default!;
 
     public DateTime VisitedAt { get; set; } = DateTime.Now;
