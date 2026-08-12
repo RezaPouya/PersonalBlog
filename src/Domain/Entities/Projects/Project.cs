@@ -1,3 +1,5 @@
+using PersonalBlog.Domain.Entities.Projects.Entities;
+
 namespace PersonalBlog.Domain.Entities.Projects;
 
 public class Project : EntityBase
@@ -18,4 +20,6 @@ public class Project : EntityBase
     public int OrderInProjects { get; set; }
     public bool IsFeatured { get; set; }
     public bool IsInEnglish { get; set; }
+
+    public virtual List<ProjectPost> ProjectPosts { get; set; } = new List<ProjectPost>();
 }

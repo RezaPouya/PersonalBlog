@@ -1,4 +1,3 @@
-using Infrastructure.Persistence.SqlServer.Converters;
 using Infrastructure.Persistence.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PersonalBlog.Domain.Entities.Courses;

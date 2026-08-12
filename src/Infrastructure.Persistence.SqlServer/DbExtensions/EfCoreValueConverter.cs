@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Newtonsoft.Json;
 
-namespace Infrastructure.Persistence.SqlServer.Converters;
+namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 
 public static class EfCoreValueConverter
 {

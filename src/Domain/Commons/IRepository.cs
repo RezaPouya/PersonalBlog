@@ -1,5 +1,3 @@
-using PersonalBlog.Domain.Commons.Base;
-
 namespace PersonalBlog.Domain.Commons;
 
 public interface IRepository<TEntity> where TEntity : EntityBase
@@ -15,10 +13,7 @@ public interface IRepository<TEntity> where TEntity : EntityBase
     /// <summary>
     /// as not tracking 
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
     Task<TEntity?> GetByIdAsync(int id, CancellationToken cancellationToken);
     Task<bool> IsExistsByIdAsync(int id, CancellationToken cancellationToken);
 
-    IQueryable<TEntity> Query(bool asNoTracking = true);
 }

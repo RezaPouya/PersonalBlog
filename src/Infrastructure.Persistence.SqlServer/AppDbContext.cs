@@ -6,6 +6,7 @@ using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Posts;
 using PersonalBlog.Domain.Entities.Posts.Entities;
 using PersonalBlog.Domain.Entities.Projects;
+using PersonalBlog.Domain.Entities.Projects.Entities;
 using PersonalBlog.Domain.Entities.Tags;
 using PersonalBlog.Domain.Exceptions;
 
@@ -31,6 +32,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Course> Courses { get; set; } = default!;
     public DbSet<CoursePost> CoursesPosts { get; set; } = default!;
     public DbSet<Project> Projects { get; set; } = default!;
+    public DbSet<ProjectPost> ProjectsPosts { get; set; } = default!;
     public DbSet<ContactMessage> ContactMessages { get; set; } = default!;
     public DbSet<Subscription> Subscriptions { get; set; } = default!;
 

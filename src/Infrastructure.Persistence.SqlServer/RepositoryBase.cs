@@ -27,9 +27,9 @@ public class RepositoryBase<TEntity>(AppDbContext dbContext) : IRepository<TEnti
     public async Task<bool> IsExistsByIdAsync(int id, CancellationToken cancellationToken) =>
         await DbContext.Set<TEntity>().AnyAsync(x => x.Id == id, cancellationToken);
 
-    public IQueryable<TEntity> Query(bool asNoTracking = true)
-    {
-        var set = DbContext.Set<TEntity>().AsQueryable();
-        return asNoTracking ? set.AsNoTracking() : set;
-    }
+    //public IQueryable<TEntity> Query(bool asNoTracking = true)
+    //{
+    //    var set = DbContext.Set<TEntity>().AsQueryable();
+    //    return asNoTracking ? set.AsNoTracking() : set;
+    //}
 }

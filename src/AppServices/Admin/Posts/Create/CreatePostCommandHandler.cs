@@ -1,10 +1,9 @@
-using AppServices.Base;
 using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
-using PersonalBlog.Domain.Entities;
 using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Posts;
+using PersonalBlog.Domain.Entities.Posts.Entities;
 using PersonalBlog.Domain.Exceptions;
 
 namespace AppServices.Admin.Posts.Create;

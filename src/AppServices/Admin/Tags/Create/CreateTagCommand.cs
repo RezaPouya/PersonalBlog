@@ -9,14 +9,9 @@ public class CreateTagCommand
     [MaxLength(100)]
     public string Title { get; set; } = default!;
 
-    [Required(ErrorMessage = "اسلاگ اجباری است")]
-    [MaxLength(100)]
-    public string Slug { get; set; } = default!;
-
     public CreateTagCommand Sanitize()
     {
         Title = Title.StringNormalization();
-        Slug = Slug.StringNormalization();
         return this;
     }
 }

@@ -1,5 +1,4 @@
-﻿using PersonalBlog.Domain.Commons.Base;
-using PersonalBlog.Utilities.Extensions;
+﻿using PersonalBlog.Utilities.Extensions;
 
 namespace Abin.Website.Domain.Entities.SEOs;
 
@@ -13,8 +12,7 @@ public class Slug : EntityBase
     public const string Article = "article";
     public const string Author = "author";
 
-    public Slug()
-    { }
+    public Slug() { }
 
     public static Slug CreateRedirection(string url, string redirectUrl)
     {
@@ -74,5 +72,4 @@ public class Slug : EntityBase
         this.HasRedirectUrl = false;
         this.RedirectUrl = null;
     }
-
 }

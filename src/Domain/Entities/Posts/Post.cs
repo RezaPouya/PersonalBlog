@@ -1,6 +1,7 @@
 using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Posts.Entities;
+using PersonalBlog.Domain.Entities.Projects.Entities;
 
 namespace PersonalBlog.Domain.Entities.Posts;
 
@@ -42,5 +43,6 @@ public class Post : EntityBase, ISoftDelete
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     public ICollection<PostVisit> Visits { get; set; } = new List<PostVisit>();
     public ICollection<CoursePost> CoursePosts { get; set; } = new List<CoursePost>();
+    public ICollection<ProjectPost> ProjectPosts { get; set; } = new List<ProjectPost>();
 }
 
