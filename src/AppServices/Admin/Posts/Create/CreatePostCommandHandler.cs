@@ -1,3 +1,4 @@
+using AppServices.Commons;
 using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
@@ -13,6 +14,7 @@ public class CreatePostCommandHandler(
     ILocalCacheManager localCacheManager,
     IPostRepository postRepository,
     ICategoryRepository categoryRepository,
+    IHtmlSanitizerService htmlSanitizerService,
     IUnitOfWork unitOfWork) : ICommandHandler<CreatePostCommand, int>
 {
     public async Task<int> Invoke(CreatePostCommand input, CancellationToken cancellationToken)
@@ -48,6 +50,8 @@ public class CreatePostCommandHandler(
 
         foreach (var tagId in input.TagIds.Distinct())
             post.PostTags.Add(new PostTag { TagId = tagId });
+
+        post.Content = htmlSanitizerService.Sanitize(input.Content);
 
         postRepository.Create(post);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,4 +1,5 @@
-﻿using AppServices.Base;
+﻿using AppServices.Commons;
+using AppServices.Commons.Imps;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ namespace AppServices
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddTransient<IHtmlSanitizerService, HtmlSanitizerService>();
             services.AddValidatorsFromAssemblyContaining<CreateCategoryCommandValidator>();
 
             services.Scan(scan => scan

@@ -1,20 +1,20 @@
-using FluentValidation;
+﻿using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Tags;
 using PersonalBlog.Domain.Exceptions;
 
-namespace AppServices.Admin.Tags.Create;
+namespace AppServices.Admin.Tags.Update;
 
-public class CreateTagCommandHandler(
-    IValidator<CreateTagCommand> validator,
+public class UpdateTagCommandHandler(
+    IValidator<UpdateTagCommand> validator,
     ILocalCacheManager localCacheManager,
     ITagRepository tagRepository,
     IUnitOfWork unitOfWork)
-    : ICommandHandler<CreateTagCommand, int>
+    : ICommandHandler<UpdateTagCommand, int>
 {
     public async Task<int> Invoke(
-        CreateTagCommand input,
+        UpdateTagCommand input,
         CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
@@ -24,21 +24,25 @@ public class CreateTagCommandHandler(
 
         input.Sanitize();
 
+        var tag = await tagRepository.FindByIdAsync(
+            input.Id,
+            cancellationToken);
+
+        if (tag is null)
+            throw new BusinessException("برچسب یافت نشد.");
+
         if (await tagRepository.IsExistsByTitleAsync(
                 input.Title,
-                null,
+                input.Id,
                 cancellationToken))
         {
             throw new BusinessException(
-                "برچسبی با این عنوان قبلاً وجود دارد.");
+                "برچسب دیگری با این عنوان وجود دارد.");
         }
 
-        var tag = new Tag
-        {
-            Title = input.Title
-        };
+        tag.Title = input.Title;
 
-        tagRepository.Create(tag);
+        tagRepository.SetUpdatedAt(tag);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

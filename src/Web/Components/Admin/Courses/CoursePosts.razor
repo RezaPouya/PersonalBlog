@@ -1,0 +1,849 @@
+﻿@page "/admin/courses/{CourseId:int}/posts"
+
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+
+@using AppServices.Admin.CoursePosts.Create
+@using AppServices.Admin.CoursePosts.Update
+@using AppServices.Admin.CoursePosts.Delete
+@using AppServices.Admin.CoursePosts.Grid
+@using AppServices.Admin.Courses
+@using AppServices.Admin.Lookups
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Courses.Dtos
+@using PersonalBlog.Utilities.Dtos
+
+@inject IQueryHandler<
+    GetCoursePostsGridQuery,
+    GridDataSourceResult < CoursePostGridDto >> GridHandler
+
+@inject IQueryHandler<
+    GetPostsLookupQuery,
+    List<IdTitleDto<int>>> PostsLookup
+
+@inject IQueryHandler<
+    GetCourseInfoQuery,
+    CourseDto?> CourseHandler
+
+@inject ICommandHandler<
+    AddPostToCourseCommand,
+    int> AddPostHandler
+
+@inject ICommandHandler<
+    UpdateCoursePostCommand,
+    int> UpdateHandler
+
+@inject ICommandHandler<
+    RemovePostFromCourseCommand,
+    int> RemoveHandler
+
+
+<PageTitle>مطالب دوره | ادمین</PageTitle>
+
+
+@if (_loadingCourse)
+{
+<div class="text-center py-5 text-muted">
+در حال بارگذاری دوره...
+</div>
+}
+else if (_course is null)
+{
+    <div class="alert alert-danger">
+        دوره یافت نشد.
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <div class="mb-2">
+
+                <a href="/admin/courses"
+                   class="text-decoration-none">
+
+                    ← بازگشت به دوره‌ها
+
+                </a>
+
+            </div>
+
+            <h1 class="h3 mb-1">
+                @_course.Title
+            </h1>
+
+            <div class="text-muted small">
+
+                مدیریت مطالب این دوره
+
+                @if (_course.IsPublished)
+                {
+                    <span class="badge text-bg-success ms-2">
+                        منتشر شده
+                    </span>
+                }
+                else
+                {
+                    <span class="badge text-bg-secondary ms-2">
+                        پیش‌نویس
+                    </span>
+                }
+
+            </div>
+
+        </div>
+
+        <button type="button"
+                class="btn btn-success"
+                @onclick="ShowAddPost">
+
+            + افزودن مطلب
+
+        </button>
+
+    </div>
+
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <div class="alert @(_isError
+                         ? "alert-danger"
+                         : "alert-success")">
+
+            @_message
+
+        </div>
+    }
+
+
+    <div class="card shadow-sm">
+
+        <div class="card-body p-0">
+
+            @if (_loadingPosts)
+            {
+                <div class="text-center py-5 text-muted">
+                    در حال بارگذاری مطالب...
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+
+                    <table class="table table-hover table-striped mb-0 align-middle">
+
+                        <thead class="table-light">
+
+                            <tr>
+
+                                <th style="width:70px">
+                                    ترتیب
+                                </th>
+
+                                <th>
+                                    مطلب
+                                </th>
+
+                                <th>
+                                    عنوان دوره
+                                </th>
+
+                                <th>
+                                    وضعیت
+                                </th>
+
+                                <th>
+                                    تاریخ
+                                </th>
+
+                                <th style="width:220px">
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            @if (_items.Count == 0)
+                            {
+                                <tr>
+
+                                    <td colspan="6"
+                                        class="text-center text-muted py-5">
+
+                                        هنوز مطلبی به این دوره اضافه نشده است.
+
+                                    </td>
+
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var item in _items)
+                                {
+                                    <tr>
+
+                                        <td>
+
+                                            <span class="badge text-bg-light border">
+
+                                                @item.OrderInCourse
+
+                                            </span>
+
+                                        </td>
+
+                                        <td>
+
+                                            <div class="fw-semibold">
+                                                @item.PostTitle
+                                            </div>
+
+                                            <div class="small text-muted">
+
+                                                Post ID:
+                                                @item.PostId
+
+                                            </div>
+
+                                        </td>
+
+                                        <td>
+
+                                            @if (!string.IsNullOrWhiteSpace(item.Title))
+                                            {
+                                                @item.Title
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">
+                                                    همان عنوان مطلب
+                                                </span>
+                                            }
+
+                                        </td>
+
+                                        <td>
+
+                                            @if (item.IsPublished)
+                                            {
+                                                <span class="badge text-bg-success">
+                                                    منتشر شده
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge text-bg-secondary">
+                                                    پیش‌نویس
+                                                </span>
+                                            }
+
+                                        </td>
+
+                                        <td>
+                                            @item.CreatedAt.ToString("yyyy/MM/dd")
+                                        </td>
+
+                                        <td class="text-nowrap">
+
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary me-1"
+                                                    @onclick="() => ShowEdit(item)">
+
+                                                ویرایش
+
+                                            </button>
+
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    disabled="@_processing"
+                                                    @onclick="() => Remove(item)">
+
+                                                حذف از دوره
+
+                                            </button>
+
+                                        </td>
+
+                                    </tr>
+                                }
+                            }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+}
+
+
+@if (_showForm)
+{
+    <div class="modal fade show d-block"
+         tabindex="-1"
+         style="background-color: rgba(0,0,0,.5);">
+
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <EditForm Model="_form"
+                          OnValidSubmit="Save">
+
+                    <DataAnnotationsValidator />
+
+                    <div class="modal-header">
+
+                        <h5 class="modal-title">
+
+                            @(_editing
+                                ? "ویرایش مطلب دوره"
+                                : "افزودن مطلب به دوره")
+
+                        </h5>
+
+                        <button type="button"
+                                class="btn-close"
+                                @onclick="CloseForm">
+                        </button>
+
+                    </div>
+
+
+                    <div class="modal-body">
+
+                        @if (!string.IsNullOrWhiteSpace(_formError))
+                        {
+                            <div class="alert alert-danger">
+                                @_formError
+                            </div>
+                        }
+
+
+                        @if (!_editing)
+                        {
+                            <div class="mb-3">
+
+                                <label class="form-label">
+                                    مطلب *
+                                </label>
+
+                                <InputSelect class="form-select"
+                                             @bind-Value="_addModel.PostId">
+
+                                    <option value="0">
+                                        -- انتخاب مطلب --
+                                    </option>
+
+                                    @foreach (var post in _posts)
+                                    {
+                                        <option value="@post.Id">
+                                            @post.Title
+                                        </option>
+                                    }
+
+                                </InputSelect>
+
+                                <ValidationMessage For="() => _addModel.PostId" />
+
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+
+                                <label class="form-label">
+                                    مطلب
+                                </label>
+
+                                <input class="form-control"
+                                       value="@_editingPostTitle"
+                                       disabled />
+
+                            </div>
+                        }
+
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                عنوان نمایشی در دوره
+                            </label>
+
+                            <InputText class="form-control"
+                                       @bind-Value="_title" />
+
+                            <div class="form-text">
+                                در صورت خالی بودن، عنوان اصلی Post نمایش داده می‌شود.
+                            </div>
+
+                        </div>
+
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                توضیح
+                            </label>
+
+                            <InputTextArea class="form-control"
+                                           rows="3"
+                                           @bind-Value="_description" />
+
+                        </div>
+
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                تصویر کاور
+                            </label>
+
+                            <InputText class="form-control"
+                                       @bind-Value="_coverImageUrl" />
+
+                        </div>
+
+
+                        <div class="row">
+
+                            <div class="col-md-6">
+
+                                <label class="form-label">
+                                    ترتیب
+                                </label>
+
+                                <InputNumber class="form-control"
+                                             @bind-Value="_order" />
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <label class="form-label d-block">
+                                    وضعیت
+                                </label>
+
+                                <div class="form-check form-switch">
+
+                                    <InputCheckbox class="form-check-input"
+                                                   @bind-Value="_isPublished" />
+
+                                    <label class="form-check-label">
+                                        منتشر شده
+                                    </label>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="modal-footer">
+
+                        <button type="button"
+                                class="btn btn-light"
+                                disabled="@_processing"
+                                @onclick="CloseForm">
+
+                            انصراف
+
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-primary"
+                                disabled="@_processing">
+
+                            @if (_processing)
+                            {
+                                <span>
+                                    در حال ذخیره...
+                                </span>
+                            }
+                            else
+                            {
+                                <span>
+                                    ذخیره
+                                </span>
+                            }
+
+                        </button>
+
+                    </div>
+
+                </EditForm>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+
+@code {
+
+    [Parameter]
+    public int CourseId { get; set; }
+
+
+    private CourseDto? _course;
+
+    private readonly List<CoursePostGridDto> _items = new();
+
+    private List<IdTitleDto<int>> _posts = new();
+
+
+    private bool _loadingCourse = true;
+    private bool _loadingPosts = true;
+    private bool _processing;
+
+    private bool _showForm;
+    private bool _editing;
+
+    private string? _message;
+    private string? _formError;
+
+    private bool _isError;
+
+    private int _page = 1;
+
+    private const int PageSize = 50;
+
+    private int _totalItems;
+    private int _totalPages;
+
+
+    private AddPostToCourseCommand _addModel = new();
+
+    private UpdateCoursePostCommand _updateModel = new();
+
+
+    private string? _editingPostTitle;
+
+
+    private object _form =>
+        _editing
+            ? _updateModel
+            : _addModel;
+
+
+    private string? _title
+    {
+        get => _editing
+            ? _updateModel.Title
+            : _addModel.Title;
+
+        set
+        {
+            if (_editing)
+                _updateModel.Title = value;
+            else
+                _addModel.Title = value;
+        }
+    }
+
+
+    private string? _description
+    {
+        get => _editing
+            ? _updateModel.Description
+            : _addModel.Description;
+
+        set
+        {
+            if (_editing)
+                _updateModel.Description = value;
+            else
+                _addModel.Description = value;
+        }
+    }
+
+
+    private string? _coverImageUrl
+    {
+        get => _editing
+            ? _updateModel.CoverImageUrl
+            : _addModel.CoverImageUrl;
+
+        set
+        {
+            if (_editing)
+                _updateModel.CoverImageUrl = value;
+            else
+                _addModel.CoverImageUrl = value;
+        }
+    }
+
+
+    private int _order
+    {
+        get => _editing
+            ? _updateModel.OrderInCourse
+            : _addModel.OrderInCourse ?? 0;
+
+        set
+        {
+            if (_editing)
+                _updateModel.OrderInCourse = value;
+            else
+                _addModel.OrderInCourse = value;
+        }
+    }
+
+
+    private bool _isPublished
+    {
+        get => _editing
+            ? _updateModel.IsPublished
+            : _addModel.IsPublished;
+
+        set
+        {
+            if (_editing)
+                _updateModel.IsPublished = value;
+            else
+                _addModel.IsPublished = value;
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCourse();
+
+        if (_course is not null)
+        {
+            await LoadPosts();
+            await LoadPostLookup();
+        }
+    }
+
+
+    private async Task LoadCourse()
+    {
+        _loadingCourse = true;
+
+        try
+        {
+            _course = await CourseHandler.Invoke(
+                new GetCourseInfoQuery
+                {
+                    Id = CourseId
+                },
+                CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+        finally
+        {
+            _loadingCourse = false;
+        }
+    }
+
+
+    private async Task LoadPosts()
+    {
+        _loadingPosts = true;
+
+        try
+        {
+            var result = await GridHandler.Invoke(
+                new GetCoursePostsGridQuery
+                {
+                    CourseId = CourseId,
+                    Page = _page,
+                    PageSize = PageSize
+                },
+                CancellationToken.None);
+
+            _items.Clear();
+
+            if (result.Data is not null)
+                _items.AddRange(result.Data);
+
+            _totalItems = result.Total;
+
+            _totalPages = (int)Math.Ceiling(
+                (double)_totalItems / PageSize);
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+        finally
+        {
+            _loadingPosts = false;
+        }
+    }
+
+
+    private async Task LoadPostLookup()
+    {
+        try
+        {
+            _posts = await PostsLookup.Invoke(
+                new GetPostsLookupQuery(),
+                CancellationToken.None)
+                ?? new();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+
+    private void ShowAddPost()
+    {
+        _editing = false;
+
+        _addModel = new AddPostToCourseCommand
+        {
+            CourseId = CourseId,
+            IsPublished = true
+        };
+
+        _formError = null;
+
+        _showForm = true;
+    }
+
+
+    private void ShowEdit(CoursePostGridDto item)
+    {
+        _editing = true;
+
+        _editingPostTitle = item.PostTitle;
+
+        _updateModel = new UpdateCoursePostCommand
+        {
+            Id = item.Id,
+            Title = item.Title,
+            Description = item.Description,
+            CoverImageUrl = item.CoverImageUrl,
+            IsPublished = item.IsPublished,
+            OrderInCourse = item.OrderInCourse
+        };
+
+        _formError = null;
+
+        _showForm = true;
+    }
+
+
+    private void CloseForm()
+    {
+        if (_processing)
+            return;
+
+        _showForm = false;
+        _formError = null;
+    }
+
+
+    private async Task Save()
+    {
+        _processing = true;
+        _formError = null;
+        _message = null;
+
+        try
+        {
+            if (_editing)
+            {
+                await UpdateHandler.Invoke(
+                    _updateModel,
+                    CancellationToken.None);
+
+                ShowSuccess(
+                    "مطلب دوره با موفقیت ویرایش شد.");
+            }
+            else
+            {
+                await AddPostHandler.Invoke(
+                    _addModel,
+                    CancellationToken.None);
+
+                ShowSuccess(
+                    "مطلب با موفقیت به دوره اضافه شد.");
+            }
+
+            _showForm = false;
+
+            await LoadPosts();
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+
+    private async Task Remove(CoursePostGridDto item)
+    {
+        if (_processing)
+            return;
+
+        _processing = true;
+        _message = null;
+
+        try
+        {
+            await RemoveHandler.Invoke(
+                new RemovePostFromCourseCommand
+                {
+                    Id = item.Id
+                },
+                CancellationToken.None);
+
+            ShowSuccess(
+                "مطلب از دوره حذف شد.");
+
+            if (_items.Count == 1 && _page > 1)
+                _page--;
+
+            await LoadPosts();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+
+    private void ShowSuccess(string message)
+    {
+        _message = message;
+        _isError = false;
+    }
+
+
+    private void ShowError(string message)
+    {
+        _message = message;
+        _isError = true;
+    }
+
+}

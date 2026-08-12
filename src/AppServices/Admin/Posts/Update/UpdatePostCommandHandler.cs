@@ -1,4 +1,4 @@
-using AppServices.Base;
+using AppServices.Commons;
 using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
@@ -13,6 +13,7 @@ public class UpdatePostCommandHandler(
     ILocalCacheManager localCacheManager,
     IPostRepository postRepository,
     ICategoryRepository categoryRepository,
+    IHtmlSanitizerService htmlSanitizerService,
     IUnitOfWork unitOfWork) : ICommandHandler<UpdatePostCommand, int>
 {
     public async Task<int> Invoke(UpdatePostCommand input, CancellationToken cancellationToken)
@@ -37,7 +38,6 @@ public class UpdatePostCommandHandler(
         post.Title = input.Title;
         post.Slug = input.Slug;
         post.Summary = input.Summary;
-        post.Content = input.Content;
         post.CoverImageUrl = input.CoverImageUrl;
         post.CategoryId = input.CategoryId;
         post.IsCommentsEnabled = input.IsCommentsEnabled;
@@ -45,6 +45,8 @@ public class UpdatePostCommandHandler(
         post.MetaTitle = input.MetaTitle;
         post.MetaDescription = input.MetaDescription;
         post.OgImageUrl = input.OgImageUrl;
+
+        post.Content = htmlSanitizerService.Sanitize(input.Content);
 
         if (input.IsPublished && !post.IsPublished)
         {

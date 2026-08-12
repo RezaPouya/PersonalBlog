@@ -1,4 +1,3 @@
-using Infrastructure.Persistence.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PersonalBlog.Domain.Entities.Courses;
 
@@ -25,5 +24,11 @@ public class CoursePostConfiguration : IEntityTypeConfiguration<CoursePost>
             .WithMany(c => c.CoursePosts)
             .HasForeignKey(p => p.PostId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(x => new
+        {
+            x.CourseId,
+            x.PostId
+        }).IsUnique();
     }
 }

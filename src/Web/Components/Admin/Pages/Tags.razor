@@ -2,14 +2,408 @@
 @layout Web.Components.Admin.Layout.AdminLayout
 @rendermode InteractiveServer
 
+@using AppServices.Admin.Tags.Create
+@using AppServices.Admin.Tags.Update
+@using AppServices.Admin.Tags.Delete
+@using AppServices.Admin.Tags.Grid
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Tags.Dtos
+@using PersonalBlog.Utilities.Dtos
+
+@inject IQueryHandler<GetTagListAsGridQuery, GridDataSourceResult<TagGridDto>> GridHandler
+@inject ICommandHandler<CreateTagCommand, int> CreateHandler
+@inject ICommandHandler<UpdateTagCommand, int> UpdateHandler
+@inject ICommandHandler<DeleteTagCommand, int> DeleteHandler
+
 <PageTitle>برچسب‌ها | ادمین</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0">مدیریت برچسب‌ها</h1>
+
+    <button class="btn btn-success" @onclick="ShowCreate">
+        + برچسب جدید
+    </button>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <p class="text-muted">CreateTagCommand و ITagRepository آماده است. می‌توانید فرم ایجاد برچسب را به این صفحه اضافه کنید.</p>
+@if (!string.IsNullOrWhiteSpace(_message))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success")">
+        @_message
     </div>
+}
+
+<div class="card shadow-sm">
+
+    <div class="card-body p-0">
+
+        @if (_loading)
+        {
+            <div class="text-center py-5 text-muted">
+                در حال بارگذاری...
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+
+                <table class="table table-hover table-striped mb-0 align-middle">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:80px">شناسه</th>
+                            <th>عنوان</th>
+                            <th>تعداد مطالب</th>
+                            <th>تاریخ ایجاد</th>
+                            <th style="width:180px"></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @if (_items.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="5"
+                                    class="text-center text-muted py-4">
+                                    هنوز برچسبی ثبت نشده است.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in _items)
+                            {
+                                <tr>
+
+                                    <td>
+                                        @item.Id
+                                    </td>
+
+                                    <td>
+                                        <span class="badge text-bg-light border">
+                                            @item.Title
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        @item.PostsCount
+                                    </td>
+
+                                    <td>
+                                        @item.CreatedAt.ToString("yyyy/MM/dd")
+                                    </td>
+
+                                    <td class="text-nowrap">
+
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                @onclick="() => ShowEdit(item)">
+                                            ویرایش
+                                        </button>
+
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => Delete(item)"
+                                                disabled="@_processing">
+                                            حذف
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+                            }
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+
+    </div>
+
+    @if (_totalPages > 1)
+    {
+        <div class="card-footer d-flex justify-content-between align-items-center">
+
+            <small class="text-muted">
+                مجموع: @_totalItems مورد
+            </small>
+
+            <div class="btn-group btn-group-sm">
+
+                <button class="btn btn-outline-secondary"
+                        disabled="@(_page <= 1)"
+                        @onclick="() => LoadPage(_page - 1)">
+                    قبلی
+                </button>
+
+                <span class="btn btn-outline-secondary disabled">
+                    @_page / @_totalPages
+                </span>
+
+                <button class="btn btn-outline-secondary"
+                        disabled="@(_page >= _totalPages)"
+                        @onclick="() => LoadPage(_page + 1)">
+                    بعدی
+                </button>
+
+            </div>
+
+        </div>
+    }
+
 </div>
+
+@if (_showForm)
+{
+    <div class="modal fade show d-block"
+         tabindex="-1"
+         style="background-color: rgba(0,0,0,.5);">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <EditForm Model="_form" OnValidSubmit="Save">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            @(_editing ? "ویرایش برچسب" : "برچسب جدید")
+                        </h5>
+
+                        <button type="button"
+                                class="btn-close"
+                                @onclick="CloseForm">
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                عنوان *
+                            </label>
+
+                            <InputText class="form-control" @bind-Value="_form.Title" autofocus />
+                            <ValidationMessage For="() => _form.Title" />
+
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button type="button"
+                                class="btn btn-light"
+                                @onclick="CloseForm">
+                            انصراف
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-primary"
+                                disabled="@_processing">
+
+                            @(_processing
+                                ? "در حال ذخیره..."
+                                : "ذخیره")
+
+                        </button>
+
+                    </div>
+
+                </EditForm>
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+@code {
+
+    private List<TagGridDto> _items = new();
+
+    private bool _loading = true;
+    private bool _processing;
+
+    private bool _showForm;
+    private bool _editing;
+
+    private string? _message;
+    private bool _isError;
+
+    private int _page = 1;
+    private int _pageSize = 20;
+
+    private int _totalItems;
+    private int _totalPages;
+
+    private CreateTagCommand _createModel = new();
+
+    private UpdateTagCommand _updateModel = new();
+
+    private object _form => _editing
+        ? _updateModel
+        : _createModel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPage(1);
+    }
+
+    private async Task LoadPage(int page)
+    {
+        _loading = true;
+        _message = null;
+
+        try
+        {
+            GridDataSourceResult<TagGridDto> result = await GridHandler.Invoke(
+                new GetTagListAsGridQuery
+                {
+                    Page = page,
+                    PageSize = _pageSize
+                },
+                CancellationToken.None);
+
+            _items = result.Data?.ToList() ?? new();
+
+            _page = page;
+
+            _totalItems = result.Totals;
+
+            _totalPages = (int)Math.Ceiling(
+                (double)_totalItems / _pageSize);
+        }
+        catch (Exception ex)
+        {
+            _items = new();
+            ShowError(ex.Message);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ShowCreate()
+    {
+        _editing = false;
+
+        _createModel = new CreateTagCommand();
+
+        _message = null;
+
+        _showForm = true;
+    }
+
+    private void ShowEdit(TagGridDto item)
+    {
+        _editing = true;
+
+        _updateModel = new UpdateTagCommand
+        {
+            Id = item.Id,
+            Title = item.Title
+        };
+
+        _message = null;
+
+        _showForm = true;
+    }
+
+    private void CloseForm()
+    {
+        if (_processing)
+            return;
+
+        _showForm = false;
+    }
+
+    private async Task Save()
+    {
+        _processing = true;
+        _message = null;
+
+        try
+        {
+            if (_editing)
+            {
+                await UpdateHandler.Invoke(
+                    _updateModel,
+                    CancellationToken.None);
+            }
+            else
+            {
+                await CreateHandler.Invoke(
+                    _createModel,
+                    CancellationToken.None);
+            }
+
+            _showForm = false;
+
+            ShowSuccess(
+                _editing
+                    ? "برچسب با موفقیت ویرایش شد."
+                    : "برچسب با موفقیت ایجاد شد.");
+
+            await LoadPage(_page);
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private async Task Delete(TagGridDto item)
+    {
+        if (_processing)
+            return;
+
+        _processing = true;
+        _message = null;
+
+        try
+        {
+            await DeleteHandler.Invoke(
+                new DeleteTagCommand
+                {
+                    Id = item.Id
+                },
+                CancellationToken.None);
+
+            ShowSuccess("برچسب با موفقیت حذف شد.");
+
+            if (_items.Count == 1 && _page > 1)
+                _page--;
+
+            await LoadPage(_page);
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+        finally
+        {
+            _processing = false;
+        }
+    }
+
+    private void ShowSuccess(string message)
+    {
+        _message = message;
+        _isError = false;
+    }
+
+    private void ShowError(string message)
+    {
+        _message = message;
+        _isError = true;
+    }
+}

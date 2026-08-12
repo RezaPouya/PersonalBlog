@@ -7,17 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Admin\Tags\Delete\" />
-    <Folder Include="Admin\Tags\Grid\" />
     <Folder Include="Admin\Tags\Read\" />
-    <Folder Include="Admin\Tags\Update\" />
-    <Folder Include="Commons\" />
     <Folder Include="Site\Categories\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="HtmlSanitizer" Version="9.2.995" />
 
   </ItemGroup>
 
