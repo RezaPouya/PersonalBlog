@@ -4,7 +4,9 @@
 @using AppServices.Admin.Categories.Grid
 @using AppServices.Base
 @using PersonalBlog.Utilities.Dtos
-@inject IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<GetCategoryGridResult>> GridHandler
+@using PersonalBlog.Domain.Entities.Categories.Dtos;
+
+@inject IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<CategoryGridDto>> GridHandler
 
 <PageTitle>دسته‌بندی‌ها | ادمین</PageTitle>
 
@@ -51,7 +53,7 @@ else
 }
 
 @code {
-    private List<GetCategoryGridResult> _items = new();
+    private List<CategoryGridDto> _items = new();
     private bool _loading = true;
 
     protected override async Task OnInitializedAsync()

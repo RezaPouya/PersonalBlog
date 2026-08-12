@@ -1,6 +1,7 @@
 ﻿global using Infrastructure.Persistence.SqlServer.DbExtensions;
 using PersonalBlog.Domain.Entities.Posts;
 using PersonalBlog.Domain.Entities.Posts.Dtos;
+using PersonalBlog.Domain.Entities.Posts.Entities;
 using PersonalBlog.Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.Repositories;
@@ -94,5 +95,26 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
         }
 
         return await query.AnyAsync(cancellationToken);
+    }
+
+    public async Task ReplaceTagsAsync(int postId, IEnumerable<int> tagIds, CancellationToken cancellationToken)
+    {
+        var normalizedTagIds = tagIds.Where(x => x > 0).Distinct().ToList();
+
+        var existingTags = await DbContext.PostTags
+            .Where(x => x.PostId == postId)
+            .ToListAsync(cancellationToken);
+
+        DbContext.PostTags.RemoveRange(existingTags);
+
+        foreach (var tagId in normalizedTagIds)
+        {
+            DbContext.PostTags.Add(
+                new PostTag
+                {
+                    PostId = postId,
+                    TagId = tagId
+                });
+        }
     }
 }

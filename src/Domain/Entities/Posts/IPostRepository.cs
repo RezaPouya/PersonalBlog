@@ -10,4 +10,5 @@ public interface IPostRepository : IRepository<Post>
     Task<bool> IsExistsBySlugAsync(string slug, int? id, CancellationToken cancellationToken);
     Task<PostDto?> GetInfoByIdAsync(int id, CancellationToken cancellationToken);
     Task<GridDataSourceResult<PostGridDto>> GetGridAsync(GridDataSourceRequest request, CancellationToken cancellationToken);
+    Task ReplaceTagsAsync(int postId, IEnumerable<int> tagIds, CancellationToken cancellationToken);
 }

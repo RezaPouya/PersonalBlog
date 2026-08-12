@@ -1,4 +1,3 @@
-using Infrastructure.Persistence.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PersonalBlog.Domain.Entities.Posts;
 
@@ -36,7 +35,7 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.HasIndex(p => p.TinyUrl).IsUnique();
 
         builder.HasIndex(p => p.IsPublished);
-        builder.HasQueryFilter(p => !p.IsDeleted);
+        //.HasQueryFilter(p => !p.IsDeleted);
 
         builder.HasOne(p => p.Category)
             .WithMany(c => c.Posts)

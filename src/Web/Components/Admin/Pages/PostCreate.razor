@@ -4,9 +4,10 @@
 @using AppServices.Admin.Posts.Create
 @using AppServices.Admin.Lookups
 @using AppServices.Base
+@using Utilities.Dtos
 @inject ICommandHandler<CreatePostCommand, int> CreateHandler
-@inject IQueryHandler<GetCategoriesLookupQuery, List<CategoryLookupItem>> CategoriesLookup
-@inject IQueryHandler<GetTagsLookupQuery, List<TagLookupItem>> TagsLookup
+@inject IQueryHandler<GetCategoriesLookupQuery, List<IdTitleDto<int>>> CategoriesLookup
+@inject IQueryHandler<GetTagsLookupQuery, List<IdTitleDto<int>>> TagsLookup
 @inject NavigationManager Nav
 
 <PageTitle>ایجاد مطلب | ادمین</PageTitle>
@@ -112,8 +113,8 @@
 
 @code {
     private CreatePostCommand _model = new() { IsCommentsEnabled = true };
-    private List<CategoryLookupItem> _categories = new();
-    private List<TagLookupItem> _tags = new();
+    private List<IdTitleDto<int>> _categories = new();
+    private List<IdTitleDto<int>> _tags = new();
     private HashSet<int> _selectedTagIds = new();
     private bool _saving;
     private string? _error;

@@ -5,7 +5,8 @@
 @using AppServices.Admin.Posts.Delete
 @using AppServices.Base
 @using PersonalBlog.Utilities.Dtos
-@inject IQueryHandler<GetPostListAsGridQuery, GridDataSourceResult<GetPostGridResult>> GridHandler
+@using PersonalBlog.Domain.Entities.Posts.Dtos
+@inject IQueryHandler<GetPostListAsGridQuery, GridDataSourceResult<PostGridDto>> GridHandler
 @inject ICommandHandler<DeletePostCommand, int> DeleteHandler
 @inject NavigationManager Nav
 
@@ -107,7 +108,7 @@ else
 }
 
 @code {
-    private List<GetPostGridResult> _items = new();
+    private List<PostGridDto> _items = new();
     private bool _loading = true;
     private bool _deleting;
     private int _page = 1;
@@ -147,7 +148,7 @@ else
         }
     }
 
-    private async Task ConfirmDelete(GetPostGridResult item)
+    private async Task ConfirmDelete(PostGridDto item)
     {
         if (!await Task.FromResult(true)) return; // UI confirm simplified
         _deleting = true;

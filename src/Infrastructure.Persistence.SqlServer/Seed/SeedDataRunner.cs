@@ -1,8 +1,9 @@
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.Extensions.Logging;
 global using PersonalBlog.Domain.Constants;
-using PersonalBlog.Domain.Entities;
 using PersonalBlog.Domain.Entities.Categories;
+using PersonalBlog.Domain.Entities.Courses;
+using PersonalBlog.Domain.Entities.Posts;
 
 namespace Infrastructure.Persistence.SqlServer.Seed;
 

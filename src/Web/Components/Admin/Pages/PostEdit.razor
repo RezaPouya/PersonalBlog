@@ -5,10 +5,12 @@
 @using AppServices.Admin.Posts.Update
 @using AppServices.Admin.Lookups
 @using AppServices.Base
-@inject IQueryHandler<GetPostQuery, GetPostResult> GetHandler
+@using PersonalBlog.Domain.Entities.Posts.Dtos
+@using Utilities.Dtos
+@inject IQueryHandler<GetPostQuery, PostDto> GetHandler
 @inject ICommandHandler<UpdatePostCommand, int> UpdateHandler
-@inject IQueryHandler<GetCategoriesLookupQuery, List<CategoryLookupItem>> CategoriesLookup
-@inject IQueryHandler<GetTagsLookupQuery, List<TagLookupItem>> TagsLookup
+@inject IQueryHandler<GetCategoriesLookupQuery, List<IdTitleDto<int>>> CategoriesLookup
+@inject IQueryHandler<GetTagsLookupQuery, List<IdTitleDto<int>>> TagsLookup
 @inject NavigationManager Nav
 
 <PageTitle>ویرایش مطلب | ادمین</PageTitle>
@@ -129,8 +131,8 @@ else
     [Parameter] public int Id { get; set; }
 
     private UpdatePostCommand? _model;
-    private List<CategoryLookupItem> _categories = new();
-    private List<TagLookupItem> _tags = new();
+    private List<IdTitleDto<int>> _categories = new();
+    private List<IdTitleDto<int>> _tags = new();
     private HashSet<int> _selectedTagIds = new();
     private bool _loading = true;
     private bool _saving;
