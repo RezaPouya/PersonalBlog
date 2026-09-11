@@ -1,0 +1,93 @@
+﻿@page "/admin/login"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Commons
+@using Web.Components.Admin.Auth
+@inject ICaptchaService Captcha
+@inject NavigationManager Navigation
+@inject AdminAuthStateProvider AdminAuthState
+
+<PageTitle>ورود ادمین | وبلاگ شخصی</PageTitle>
+
+<div class="max-w-sm mx-auto mt-10 px-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+        <div class="text-center mb-6">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">ورود مدیریت</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">فقط ادمین سایت می‌تواند وارد شود</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm rounded-lg p-3 mb-4">
+                @_error
+            </div>
+        }
+
+        <form method="post" action="/admin/login" class="space-y-4">
+            <input type="hidden" name="CaptchaId" value="@_captchaId" />
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ایمیل</label>
+                <input type="email" name="Email" required autocomplete="username"
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-white"
+                       placeholder="admin@example.com" dir="ltr" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رمز عبور</label>
+                <input type="password" name="Password" required autocomplete="current-password"
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-white"
+                       dir="ltr" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">کپچا</label>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-lg font-mono font-bold select-none bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white tracking-wider">
+                        @_captchaQuestion
+                    </span>
+                    <button type="button" @onclick="RefreshCaptcha"
+                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            title="کپچای جدید">
+                        🔄
+                    </button>
+                </div>
+                <input type="number" name="CaptchaAnswer" required
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-white"
+                       placeholder="پاسخ را وارد کنید" />
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="RememberMe" value="true" id="remember"
+                       class="rounded border-gray-300 dark:border-gray-600 text-sky-600 focus:ring-sky-500" />
+                <label for="remember" class="text-sm text-gray-700 dark:text-gray-300">مرا به خاطر بسپار</label>
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition">
+                ورود
+            </button>
+        </form>
+    </div>
+</div>
+
+@code {
+    private string _captchaId = "";
+    private string _captchaQuestion = "";
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshCaptcha();
+
+        // خواندن خطا از query string
+        var uri = new Uri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        _error = query["error"];
+    }
+
+    private async Task RefreshCaptcha()
+    {
+        (_captchaId, _captchaQuestion) = await Captcha.GenerateChallengeAsync(CancellationToken.None);
+    }
+}

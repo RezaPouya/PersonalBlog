@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Persistence.SqlServer.Migrations
 {
     /// <inheritdoc />
-    public partial class initializedb : Migration
+    public partial class initialize_db : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -83,7 +83,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     Slug = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    TinyUrl = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    TinyUrl = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: false),
                     IsInEnglish = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -123,7 +123,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Slug = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    TinyUrl = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    TinyUrl = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
                     CoverImageUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
                     IsPublished = table.Column<bool>(type: "bit", nullable: false),
@@ -146,7 +146,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Slug = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    TinyUrl = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    TinyUrl = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(2024)", maxLength: 2024, nullable: false),
                     ImageUrl = table.Column<string>(type: "nvarchar(2024)", maxLength: 2024, nullable: true),
                     LiveUrl = table.Column<string>(type: "nvarchar(2024)", maxLength: 2024, nullable: true),
@@ -190,7 +190,6 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -313,7 +312,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
                     Slug = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
-                    TinyUrl = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    TinyUrl = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     Summary = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CoverImageUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
@@ -465,6 +464,39 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ProjectsPosts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PostId = table.Column<int>(type: "int", nullable: false),
+                    ProjectId = table.Column<int>(type: "int", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
+                    CoverImageUrl = table.Column<string>(type: "nvarchar(2048)", maxLength: 2048, nullable: true),
+                    IsPublished = table.Column<bool>(type: "bit", nullable: false),
+                    OrderInCourse = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProjectsPosts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProjectsPosts_Posts_PostId",
+                        column: x => x.PostId,
+                        principalTable: "Posts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ProjectsPosts_Projects_ProjectId",
+                        column: x => x.ProjectId,
+                        principalTable: "Projects",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -539,9 +571,10 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_CoursesPosts_CourseId",
+                name: "IX_CoursesPosts_CourseId_PostId",
                 table: "CoursesPosts",
-                column: "CourseId");
+                columns: new[] { "CourseId", "PostId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_CoursesPosts_PostId",
@@ -604,6 +637,16 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_ProjectsPosts_PostId",
+                table: "ProjectsPosts",
+                column: "PostId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProjectsPosts_ProjectId",
+                table: "ProjectsPosts",
+                column: "ProjectId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Subscriptions_Email_IsActive",
                 table: "Subscriptions",
                 columns: new[] { "Email", "IsActive" },
@@ -616,9 +659,9 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tags_Slug",
+                name: "IX_Tags_Title",
                 table: "Tags",
-                column: "Slug",
+                column: "Title",
                 unique: true);
         }
 
@@ -659,7 +702,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                 name: "PostVisits");
 
             migrationBuilder.DropTable(
-                name: "Projects");
+                name: "ProjectsPosts");
 
             migrationBuilder.DropTable(
                 name: "Subscriptions");
@@ -678,6 +721,9 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
             migrationBuilder.DropTable(
                 name: "Posts");
+
+            migrationBuilder.DropTable(
+                name: "Projects");
 
             migrationBuilder.DropTable(
                 name: "Categories");

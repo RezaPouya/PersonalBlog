@@ -20,7 +20,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(p => p.Slug).HasMaxLength(200).IsRequired();
         builder.HasIndex(p => p.Slug).IsUnique();
 
-        builder.Property(c => c.TinyUrl).HasMaxLength(10).IsRequired();
+        builder.Property(c => c.TinyUrl).HasMaxLength(32).IsRequired();
         builder.HasIndex(p => p.TinyUrl).IsUnique();
     }
 }

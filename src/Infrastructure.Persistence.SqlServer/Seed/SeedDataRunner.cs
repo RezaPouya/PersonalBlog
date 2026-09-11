@@ -57,26 +57,35 @@ public static class SeedDataRunner
             {
                 var category = new Category
                 {
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
                     Title = "برنامه‌نویسی",
-                    Slug = "programming",
-                    Description = "یادداشت‌ها و آموزش‌های برنامه‌نویسی"
+                    Slug = "development",
+                    Description = "یادداشت‌ها و آموزش‌های برنامه‌نویسی",
+                    TinyUrl = "ct_development"
                 };
                 dbContext.Categories.Add(category);
 
                 var category2 = new Category
                 {
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
                     Title = "معماری نرم افزار",
                     Slug = "software-architecture",
-                    Description = "معماری نرم افزار"
+                    Description = "معماری نرم افزار",
+                    TinyUrl = "ct_software_architecture"
                 };
 
                 dbContext.Categories.Add(category2);
 
                 var category3 = new Category
                 {
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
                     Title = "توسعه شخصی",
                     Slug = "self-development",
-                    Description = "نوشته های توسعه شخصی"
+                    Description = "نوشته های توسعه شخصی",
+                    TinyUrl = "ct_self_architecture"
                 };
 
                 dbContext.Categories.Add(category3);
@@ -84,10 +93,13 @@ public static class SeedDataRunner
 
                 var course = new Course
                 {
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
                     Title = "قضاوت مهندسی",
                     Slug = "engineering-judgment",
                     Description = "قضاوت مهندسی",
-                    IsPublished = false
+                    IsPublished = false,
+                    TinyUrl = "ct_engineering_judgment"
                 };
                 dbContext.Courses.Add(course);
 
@@ -100,7 +112,9 @@ public static class SeedDataRunner
                     Summary = "اولین پست این وبلاگ شخصی، برای تست راه‌اندازی اولیه.",
                     Content = "<p>این یک پست نمونه است که هنگام seed دیتابیس ساخته می‌شود.</p>",
                     IsPublished = true,
-                    PublishedAt = DateTime.Now,
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
+                    PublishedAt = new DateTime(2026, 12, 9),
                     CategoryId = category.Id,
                 });
                 await dbContext.SaveChangesAsync();

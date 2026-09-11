@@ -1,4 +1,3 @@
-using PersonalBlog.Domain.Commons.Base;
 using PersonalBlog.Domain.Entities.Posts;
 
 namespace PersonalBlog.Domain.Entities.Categories;
@@ -20,7 +19,7 @@ public class Category : EntityBase
     /// </summary>
     public string Slug { get; set; } = default!;
 
-    public string TinyUrl { get; private set; }
+    public string TinyUrl { get; set; }
 
     /// <summary>
     /// 2048

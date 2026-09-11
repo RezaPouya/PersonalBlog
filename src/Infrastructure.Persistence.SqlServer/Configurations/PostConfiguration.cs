@@ -14,7 +14,7 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
 
         builder.Property(p => p.Slug).HasMaxLength(250).IsRequired();
 
-        builder.Property(c => c.TinyUrl).HasMaxLength(10).IsRequired();
+        builder.Property(c => c.TinyUrl).HasMaxLength(32).IsRequired();
 
         builder.Property(p => p.Summary).HasMaxLength(500).IsRequired();
 
@@ -29,7 +29,8 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.Property(c => c.OgImageUrl).HasMaxLength(2048);
 
         builder.Property(c => c.RelatedPosts).HasMaxLength(2048)
-        .HasConversion(EfCoreValueConverter.CreateIntListValueConverter()); ;
+            .HasConversion(EfCoreValueConverter.CreateIntListValueConverter())
+            .Metadata.SetValueComparer(EfCoreValueConverter.CreateIntListValueComparer());
 
         builder.HasIndex(p => p.Slug).IsUnique();
         builder.HasIndex(p => p.TinyUrl).IsUnique();

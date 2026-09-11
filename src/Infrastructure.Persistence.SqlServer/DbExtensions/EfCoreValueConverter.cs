@@ -8,6 +8,30 @@ namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 
 public static class EfCoreValueConverter
 {
+    public static ValueConverter<List<int>, string> CreateIntListValueConverter()
+    {
+        return new ValueConverter<List<int>, string>(
+            i => i == null ? string.Empty : string.Join(",", i),
+            s => string.IsNullOrWhiteSpace(s)
+                ? new List<int>()
+                : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(v => int.Parse(v.Trim().ToEnglishNumbers()))
+                    .ToList()
+        );
+    }
+
+    /// <summary>
+    /// ValueComparer برای List<int> - برای اینکه EF Core بتواند دو لیست را درست مقایسه کند
+    /// </summary>
+    public static ValueComparer<List<int>> CreateIntListValueComparer()
+    {
+        return new ValueComparer<List<int>>(
+            (c1, c2) => (c1 ?? new List<int>()).SequenceEqual(c2 ?? new List<int>()),
+            c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+            c => c == null ? new List<int>() : c.ToList()
+        );
+    }
+
     public static PropertyBuilder<T> HasJsonConversion<T>(this PropertyBuilder<T> propertyBuilder) where T : class, new()
     {
         ValueConverter<T, string> converter = new ValueConverter<T, string>
@@ -72,15 +96,4 @@ public static class EfCoreValueConverter
                 s.Split(new[] { ',' }).Select(v => v.Trim()).ToList());
     }
 
-    public static ValueConverter<List<int>, string> CreateIntListValueConverter()
-    {
-        return new ValueConverter<List<int>, string>(
-            i => i == null ? string.Empty : string.Join(",", i),
-            s => string.IsNullOrWhiteSpace(s)
-                ? new List<int>()
-                : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(v => int.Parse(v.Trim().ToEnglishNumbers()))
-                    .ToList()
-        );
-    }
 }

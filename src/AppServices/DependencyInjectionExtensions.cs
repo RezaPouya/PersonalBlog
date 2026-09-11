@@ -17,6 +17,7 @@ namespace AppServices
             services.Configure<CacheSettings>(configuration.GetSection("CacheSettings"));
 
             services.AddTransient<IHtmlSanitizerService, HtmlSanitizerService>();
+            services.AddScoped<ICaptchaService, MathCaptchaService>();
             services.AddValidatorsFromAssemblyContaining<CreateCategoryCommandValidator>();
 
             services.Scan(scan => scan

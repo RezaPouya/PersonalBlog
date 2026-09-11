@@ -125,7 +125,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Category", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Categories.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -151,8 +151,8 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     b.Property<string>("TinyUrl")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -173,62 +173,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.ToTable("Categories", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Comment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("IpAddress")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsSpam")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<int?>("ParentCommentId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParentCommentId");
-
-                    b.HasIndex("PostId");
-
-                    b.ToTable("Comments", (string)null);
-                });
-
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.ContactMessage", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.ContactMessages.ContactMessage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -277,7 +222,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.ToTable("ContactMessages", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Course", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Courses.Course", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -316,8 +261,8 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     b.Property<string>("TinyUrl")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -338,7 +283,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.ToTable("Courses", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.CoursePost", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Courses.CoursePost", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -378,9 +323,10 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CourseId");
-
                     b.HasIndex("PostId");
+
+                    b.HasIndex("CourseId", "PostId")
+                        .IsUnique();
 
                     b.ToTable("CoursesPosts", (string)null);
                 });
@@ -489,7 +435,142 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Post", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Comment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSpam")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<int?>("ParentCommentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("Comments", (string)null);
+                });
+
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Entities.PostTag", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TagId");
+
+                    b.HasIndex("PostId", "TagId")
+                        .IsUnique();
+
+                    b.ToTable("PostTags", (string)null);
+                });
+
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Entities.PostVisit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Browser")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Device")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<string>("OS")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTime>("VisitedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("VisitedAt");
+
+                    b.ToTable("PostVisits", (string)null);
+                });
+
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Post", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -558,8 +639,8 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     b.Property<string>("TinyUrl")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -587,7 +668,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.ToTable("Posts", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.PostTag", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Projects.Entities.ProjectPost", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -595,79 +676,46 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TagId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TagId");
-
-                    b.HasIndex("PostId", "TagId")
-                        .IsUnique();
-
-                    b.ToTable("PostTags", (string)null);
-                });
-
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.PostVisit", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Browser")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<string>("CoverImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Device")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<string>("Description")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
-                    b.Property<string>("IpAddress")
-                        .IsRequired()
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)");
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("OS")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int>("OrderInCourse")
+                        .HasColumnType("int");
 
                     b.Property<int>("PostId")
                         .HasColumnType("int");
 
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserAgent")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<DateTime>("VisitedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
                     b.HasIndex("PostId");
 
-                    b.HasIndex("VisitedAt");
+                    b.HasIndex("ProjectId");
 
-                    b.ToTable("PostVisits", (string)null);
+                    b.ToTable("ProjectsPosts", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Project", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Projects.Project", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -714,8 +762,8 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     b.Property<string>("TinyUrl")
                         .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -736,7 +784,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.ToTable("Projects", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Subscription", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Subscriptions.Subscription", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -785,7 +833,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.ToTable("Subscriptions", (string)null);
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Tag", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Tags.Tag", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -795,11 +843,6 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -811,7 +854,7 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Slug")
+                    b.HasIndex("Title")
                         .IsUnique();
 
                     b.ToTable("Tags", (string)null);
@@ -914,33 +957,15 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Comment", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Courses.CoursePost", b =>
                 {
-                    b.HasOne("PersonalBlog.Domain.Entities.Comment", "ParentComment")
-                        .WithMany("Replies")
-                        .HasForeignKey("ParentCommentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("PersonalBlog.Domain.Entities.Post", "Post")
-                        .WithMany("Comments")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ParentComment");
-
-                    b.Navigation("Post");
-                });
-
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.CoursePost", b =>
-                {
-                    b.HasOne("PersonalBlog.Domain.Entities.Course", "Course")
+                    b.HasOne("PersonalBlog.Domain.Entities.Courses.Course", "Course")
                         .WithMany("CoursePosts")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("PersonalBlog.Domain.Entities.Post", "Post")
+                    b.HasOne("PersonalBlog.Domain.Entities.Posts.Post", "Post")
                         .WithMany("CoursePosts")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -951,26 +976,33 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.Navigation("Post");
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Post", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Comment", b =>
                 {
-                    b.HasOne("PersonalBlog.Domain.Entities.Category", "Category")
-                        .WithMany("Posts")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                    b.HasOne("PersonalBlog.Domain.Entities.Posts.Comment", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("PersonalBlog.Domain.Entities.Posts.Post", "Post")
+                        .WithMany("Comments")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Category");
+                    b.Navigation("ParentComment");
+
+                    b.Navigation("Post");
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.PostTag", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Entities.PostTag", b =>
                 {
-                    b.HasOne("PersonalBlog.Domain.Entities.Post", "Post")
+                    b.HasOne("PersonalBlog.Domain.Entities.Posts.Post", "Post")
                         .WithMany("PostTags")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PersonalBlog.Domain.Entities.Tag", "Tag")
+                    b.HasOne("PersonalBlog.Domain.Entities.Tags.Tag", "Tag")
                         .WithMany("PostTags")
                         .HasForeignKey("TagId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -981,9 +1013,9 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.Navigation("Tag");
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.PostVisit", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Entities.PostVisit", b =>
                 {
-                    b.HasOne("PersonalBlog.Domain.Entities.Post", "Post")
+                    b.HasOne("PersonalBlog.Domain.Entities.Posts.Post", "Post")
                         .WithMany("Visits")
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -992,22 +1024,52 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
                     b.Navigation("Post");
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Category", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Post", b =>
+                {
+                    b.HasOne("PersonalBlog.Domain.Entities.Categories.Category", "Category")
+                        .WithMany("Posts")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Projects.Entities.ProjectPost", b =>
+                {
+                    b.HasOne("PersonalBlog.Domain.Entities.Posts.Post", "Post")
+                        .WithMany("ProjectPosts")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PersonalBlog.Domain.Entities.Projects.Project", "Project")
+                        .WithMany("ProjectPosts")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Categories.Category", b =>
                 {
                     b.Navigation("Posts");
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Comment", b =>
-                {
-                    b.Navigation("Replies");
-                });
-
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Course", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Courses.Course", b =>
                 {
                     b.Navigation("CoursePosts");
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Post", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Comment", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Posts.Post", b =>
                 {
                     b.Navigation("Comments");
 
@@ -1015,10 +1077,17 @@ namespace Infrastructure.Persistence.SqlServer.Migrations
 
                     b.Navigation("PostTags");
 
+                    b.Navigation("ProjectPosts");
+
                     b.Navigation("Visits");
                 });
 
-            modelBuilder.Entity("PersonalBlog.Domain.Entities.Tag", b =>
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Projects.Project", b =>
+                {
+                    b.Navigation("ProjectPosts");
+                });
+
+            modelBuilder.Entity("PersonalBlog.Domain.Entities.Tags.Tag", b =>
                 {
                     b.Navigation("PostTags");
                 });
