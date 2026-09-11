@@ -17,21 +17,15 @@
     GetCoursePostsGridQuery,
     GridDataSourceResult < CoursePostGridDto >> GridHandler
 
-@inject IQueryHandler<
-    GetPostsLookupQuery,
-    List<IdTitleDto<int>>> PostsLookup
+@inject IQueryHandler<GetPostsLookupQuery,List<IdTitleDto<int>>> PostsLookup
 
-@inject IQueryHandler<
-    GetCourseInfoQuery,
-    CourseDto?> CourseHandler
+@inject IQueryHandler<GetCourseInfoQuery,CourseDto?> CourseHandler
 
 @inject ICommandHandler<
     AddPostToCourseCommand,
     int> AddPostHandler
 
-@inject ICommandHandler<
-    UpdateCoursePostCommand,
-    int> UpdateHandler
+@inject ICommandHandler<UpdateCoursePostCommand,int> UpdateHandler
 
 @inject ICommandHandler<
     RemovePostFromCourseCommand,

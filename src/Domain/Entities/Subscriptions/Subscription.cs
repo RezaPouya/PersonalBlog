@@ -1,6 +1,4 @@
-using PersonalBlog.Domain.Commons.Base;
-
-namespace PersonalBlog.Domain.Entities;
+namespace PersonalBlog.Domain.Entities.Subscriptions;
 
 public class Subscription : EntityBase
 {

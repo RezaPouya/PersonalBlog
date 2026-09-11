@@ -35,6 +35,13 @@ public class Post : EntityBase, ISoftDelete
 
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
+
+    public void MarkAsDeleted()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+    }
+
     public bool IsCommentsEnabled { get; set; }
     public bool IsInEnglish { get; set; }
 
