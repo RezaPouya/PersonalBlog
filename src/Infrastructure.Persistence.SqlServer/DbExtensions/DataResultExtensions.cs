@@ -35,7 +35,7 @@ public static class DataResultExtensions
             Data = result,
             PageSize = pageSize,
             Page = page,
-            Totals = totalRecords,
+            Total = totalRecords,
             TotalPages = totalPages
         };
     }

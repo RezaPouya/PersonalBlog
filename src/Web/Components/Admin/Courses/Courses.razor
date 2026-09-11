@@ -633,7 +633,7 @@
 
         try
         {
-            var result = await GridHandler.Invoke(
+            GridDataSourceResult<CourseGridDto> result = await GridHandler.Invoke(
                 new GetCourseListAsGridQuery
                 {
                     Page = page,

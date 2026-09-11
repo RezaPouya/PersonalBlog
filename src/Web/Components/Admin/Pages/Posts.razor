@@ -134,7 +134,7 @@ else
 
             _items = result.Data?.ToList() ?? new();
             _totalPages = result.TotalPages;
-            _totals = result.Totals;
+            _totals = result.Total;
         }
         catch (Exception ex)
         {
