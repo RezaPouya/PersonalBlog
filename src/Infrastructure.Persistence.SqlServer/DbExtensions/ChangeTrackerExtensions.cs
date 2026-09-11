@@ -1,23 +1,14 @@
-﻿using Iau.Bazaar.Domain.Entities.Identities.Users.Services;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
+﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PersonalBlog.Domain.Commons.Base;
 
 namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 
 public static class ChangeTrackerExtensions
 {
-    public static void AddCurrentUserData(this ChangeTracker changeTracker, ICurrentAppUser currentUser)
+    public static void AddCurrentUserData(this ChangeTracker changeTracker)
     {
-        var currentUserId = currentUser?.UserId ?? 0;
-
-        if (currentUserId == 0)
-            currentUserId = 0;
-
         foreach (var entry in changeTracker.Entries<IEntityBase>())
         {
-            //if (entry.State == EntityState.Added)
-            //    entry.Entity.SetCreatedBy(currentUserId);
-
             if (entry.State == EntityState.Modified)
                 entry.Entity.UpdatedAt = DateTime.Now;
         }
