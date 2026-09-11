@@ -1,6 +1,6 @@
 ﻿using Ganss.Xss;
 
-namespace AppServices.Commons.Imps;
+namespace AppServices.Commons;
 
 public sealed class HtmlSanitizerService : IHtmlSanitizerService
 {

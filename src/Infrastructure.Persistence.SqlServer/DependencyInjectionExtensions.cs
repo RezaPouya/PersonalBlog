@@ -3,7 +3,6 @@ global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using PersonalBlog.Domain.Entities.Identities;
 using AppServices.Options;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using PersonalBlog.Domain.Commons;
 
 namespace Infrastructure.Persistence.SqlServer;
@@ -20,7 +19,7 @@ public static class DependencyInjectionExtensions
             ConnectionString = connectionString,
         });
 
-        services.TryAddTransient<AppDbContextSaveChangesInterceptor>();
+        services.AddScoped<AppDbContextSaveChangesInterceptor>();
 
         services.AddDbContext<AppDbContext>((sp, options) =>
             options.UseSqlServer(connectionString, b =>
@@ -30,16 +29,6 @@ public static class DependencyInjectionExtensions
             })
             .AddInterceptors(sp.GetRequiredService<AppDbContextSaveChangesInterceptor>())
             .EnableDetailedErrors(false)); // کاملاً صحیح است
-
-        services.AddIdentityCore<AppUser>(options =>
-        {
-            options.Password.RequiredLength = 8;
-            options.User.RequireUniqueEmail = true;
-        })
-            .AddRoles<AppRole>()
-            .AddEntityFrameworkStores<AppDbContext>()
-            .AddSignInManager()
-            .AddDefaultTokenProviders();
 
         services.AddMemoryCache();
         services.AddSingleton<ILocalCacheManager, LocalCacheManager>();

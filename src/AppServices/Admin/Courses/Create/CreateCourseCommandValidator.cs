@@ -2,8 +2,7 @@
 
 namespace AppServices.Admin.Courses.Create;
 
-public class CreateCourseCommandValidator
-    : AbstractValidator<CreateCourseCommand>
+public class CreateCourseCommandValidator : AbstractValidator<CreateCourseCommand>
 {
     public CreateCourseCommandValidator()
     {

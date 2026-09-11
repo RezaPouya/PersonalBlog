@@ -5,12 +5,18 @@ namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 
 public static class ChangeTrackerExtensions
 {
-    public static void AddCurrentUserData(this ChangeTracker changeTracker)
+    public static void AddAudits(this ChangeTracker changeTracker)
     {
         foreach (var entry in changeTracker.Entries<IEntityBase>())
         {
-            if (entry.State == EntityState.Modified)
+            if (entry.State == EntityState.Added)
+            {
+                entry.Entity.CreatedAt = DateTime.Now;
+            }
+            else if (entry.State == EntityState.Modified)
+            {
                 entry.Entity.UpdatedAt = DateTime.Now;
+            }
         }
 
         foreach (var entry in changeTracker.Entries<ISoftDelete>())
