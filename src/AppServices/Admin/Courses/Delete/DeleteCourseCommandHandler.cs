@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using PersonalBlog.Domain.Commons;
+﻿using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Exceptions;
@@ -7,7 +6,7 @@ using PersonalBlog.Domain.Exceptions;
 namespace AppServices.Admin.Courses.Delete;
 
 public class DeleteCourseCommandHandler(
-    IValidator<DeleteCourseCommand> validator,
+    //IValidator<DeleteCourseCommand> validator,
     ILocalCacheManager localCacheManager,
     ICourseRepository courseRepository,
     IUnitOfWork unitOfWork)
@@ -17,10 +16,10 @@ public class DeleteCourseCommandHandler(
         DeleteCourseCommand input,
         CancellationToken cancellationToken)
     {
-        var validationResult = validator.Validate(input);
+        //var validationResult = validator.Validate(input);
 
-        if (!validationResult.IsValid)
-            throw new ValidationException(validationResult.Errors);
+        //if (!validationResult.IsValid)
+        //    throw new ValidationException(validationResult.Errors);
 
         var course = await courseRepository.FindByIdAsync(
             input.Id,
