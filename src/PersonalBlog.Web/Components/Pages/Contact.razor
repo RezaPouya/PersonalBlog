@@ -1,0 +1,67 @@
+@page "/contact"
+@inject IContactMessageService ContactMessageService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IOptions<RecaptchaSettings> RecaptchaOptions
+@using Microsoft.Extensions.Options
+@using PersonalBlog.AppServices.Options
+@rendermode InteractiveServer
+
+<div class="container py-4" style="max-width:600px">
+    <h1 class="mb-4">تماس با ما</h1>
+
+    @if (_submitted)
+    {
+        <p class="text-success">پیام شما با موفقیت ارسال شد. به‌زودی پاسخ داده خواهد شد.</p>
+    }
+    else
+    {
+        <EditForm Model="_input" OnValidSubmit="SubmitAsync">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label">نام و نام‌خانوادگی</label>
+                <input class="form-control" @bind="_input.FullName" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">ایمیل</label>
+                <input type="email" class="form-control" @bind="_input.Email" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">موضوع</label>
+                <input class="form-control" @bind="_input.Subject" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">پیام</label>
+                <textarea class="form-control" rows="5" @bind="_input.Body" required></textarea>
+            </div>
+
+            <div class="g-recaptcha my-2" data-sitekey="@RecaptchaOptions.Value.SiteKey"></div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <p class="text-danger">@_error</p>
+            }
+
+            <button type="submit" class="btn btn-primary">ارسال پیام</button>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private readonly CreateContactMessageInputDto _input = new();
+    private bool _submitted;
+    private string? _error;
+
+    private async Task SubmitAsync()
+    {
+        try
+        {
+            var ip = HttpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            await ContactMessageService.SubmitAsync(_input, ip);
+            _submitted = true;
+        }
+        catch (Exception)
+        {
+            _error = "ارسال پیام ناموفق بود. لطفاً دوباره تلاش کنید.";
+        }
+    }
+}

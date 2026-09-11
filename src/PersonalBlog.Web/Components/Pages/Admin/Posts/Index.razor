@@ -1,0 +1,83 @@
+@page "/admin/posts"
+@layout PersonalBlog.Web.Components.Layout.AdminLayout
+@attribute [Authorize(Policy = "AdminOnly")]
+@inject IPostService PostService
+@rendermode InteractiveServer
+
+<PageTitle>مدیریت پست‌ها</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>مدیریت پست‌ها</h1>
+    <a href="/admin/posts/new" class="btn btn-primary">+ پست جدید</a>
+</div>
+
+<table class="table table-bordered bg-white">
+    <thead>
+        <tr>
+            <th>عنوان</th>
+            <th>دسته‌بندی</th>
+            <th>وضعیت</th>
+            <th>بازدید</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var post in _posts)
+        {
+            <tr>
+                <td>@post.Title</td>
+                <td>@post.CategoryTitle</td>
+                <td>
+                    @if (post.IsPublished)
+                    {
+                        <span class="badge bg-success">منتشرشده</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">پیش‌نویس</span>
+                    }
+                </td>
+                <td>@post.ViewCount</td>
+                <td class="text-end">
+                    <a href="/admin/posts/@post.Id" class="btn btn-sm btn-outline-primary">ویرایش</a>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(post.Id)">حذف</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<Pagination CurrentPage="_page" TotalPages="_totalPages" OnPageChanged="OnPageChangedAsync" />
+
+@code {
+    private List<PostListItemDto> _posts = new();
+    private int _page = 1;
+    private int _totalPages = 1;
+    private const int PageSize = 15;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task OnPageChangedAsync(int page)
+    {
+        _page = page;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var (items, total) = await PostService.GetListAsync(new PostListFilterDto
+        {
+            Page = _page,
+            PageSize = PageSize,
+            OnlyPublished = false
+        });
+        _posts = items;
+        _totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
+    }
+
+    private async Task DeleteAsync(long id)
+    {
+        await PostService.DeleteAsync(id, currentUserId: null);
+        await LoadAsync();
+    }
+}

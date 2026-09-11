@@ -1,0 +1,38 @@
+@* دکمه‌های اشتراک‌گذاری در شبکه‌های اجتماعی + کپی لینک *@
+@inject IJSRuntime JsRuntime
+
+<div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-sm btn-outline-primary" target="_blank"
+       href="https://twitter.com/intent/tweet?url=@Uri.EscapeDataString(PageUrl)&text=@Uri.EscapeDataString(Title)">
+        <i class="bi bi-twitter-x"></i> توییتر
+    </a>
+    <a class="btn btn-sm btn-outline-primary" target="_blank"
+       href="https://www.linkedin.com/sharing/share-offsite/?url=@Uri.EscapeDataString(PageUrl)">
+        <i class="bi bi-linkedin"></i> لینکدین
+    </a>
+    <a class="btn btn-sm btn-outline-primary" target="_blank"
+       href="https://www.facebook.com/sharer/sharer.php?u=@Uri.EscapeDataString(PageUrl)">
+        <i class="bi bi-facebook"></i> فیسبوک
+    </a>
+    <a class="btn btn-sm btn-outline-success" target="_blank"
+       href="https://wa.me/?text=@Uri.EscapeDataString(Title + " " + PageUrl)">
+        <i class="bi bi-whatsapp"></i> واتس‌اپ
+    </a>
+    <a class="btn btn-sm btn-outline-info" target="_blank"
+       href="https://t.me/share/url?url=@Uri.EscapeDataString(PageUrl)&text=@Uri.EscapeDataString(Title)">
+        <i class="bi bi-telegram"></i> تلگرام
+    </a>
+    <button class="btn btn-sm btn-outline-secondary" @onclick="CopyLinkAsync">
+        <i class="bi bi-link-45deg"></i> کپی لینک
+    </button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string PageUrl { get; set; } = default!;
+    [Parameter, EditorRequired] public string Title { get; set; } = default!;
+
+    private async Task CopyLinkAsync()
+    {
+        await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", PageUrl);
+    }
+}

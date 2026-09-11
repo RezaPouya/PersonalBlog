@@ -1,0 +1,102 @@
+@page "/"
+@inject IPostService PostService
+@inject ICourseService CourseService
+@inject IProjectService ProjectService
+
+<PageTitle>وبلاگ من - آخرین یادداشت‌ها</PageTitle>
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <h1 class="mb-4">آخرین پست‌ها</h1>
+
+            @if (_posts is null)
+            {
+                <p>در حال بارگذاری...</p>
+            }
+            else if (_posts.Count == 0)
+            {
+                <p class="text-muted">هنوز پستی منتشر نشده است.</p>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var post in _posts)
+                    {
+                        <div class="col-md-6">
+                            <PostCard Post="post" />
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_courses.Count > 0)
+            {
+                <h2 class="mt-5 mb-3">دوره‌های آموزشی</h2>
+                <div class="row g-3">
+                    @foreach (var course in _courses.Take(3))
+                    {
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">@course.Title</h5>
+                                    <p class="card-text text-muted small">@course.Description</p>
+                                    <a href="/course/@course.Slug" class="btn btn-sm btn-outline-primary">مشاهده‌ی دوره (@course.PostCount پست)</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_projects.Count > 0)
+            {
+                <h2 class="mt-5 mb-3">پروژه‌های برجسته</h2>
+                <div class="row g-3">
+                    @foreach (var project in _projects.Where(p => p.IsFeatured).Take(3))
+                    {
+                        <div class="col-md-4">
+                            <div class="card h-100">
+                                @if (!string.IsNullOrWhiteSpace(project.ImageUrl))
+                                {
+                                    <img src="@project.ImageUrl" class="card-img-top" style="height:150px;object-fit:cover;" />
+                                }
+                                <div class="card-body">
+                                    <h6 class="card-title">@project.Title</h6>
+                                    <p class="card-text small text-muted">@project.Description</p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="card bg-primary-subtle mt-5">
+                <div class="card-body text-center">
+                    <h5>عضویت در خبرنامه</h5>
+                    <p class="text-muted">از انتشار پست‌های جدید باخبر شوید.</p>
+                    <NewsletterForm />
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <Sidebar />
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<PostListItemDto>? _posts;
+    private List<CourseDto> _courses = new();
+    private List<ProjectDto> _projects = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var (items, _) = await PostService.GetListAsync(new PostListFilterDto { Page = 1, PageSize = 6 });
+        _posts = items;
+
+        _courses = await CourseService.GetAllAsync();
+        _projects = await ProjectService.GetAllAsync();
+    }
+}

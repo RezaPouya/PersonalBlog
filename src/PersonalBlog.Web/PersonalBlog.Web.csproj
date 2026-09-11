@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>personalblog-web-secrets</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.MSSqlServer" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PersonalBlog.Domain\PersonalBlog.Domain.csproj" />
+    <ProjectReference Include="..\PersonalBlog.AppServices\PersonalBlog.AppServices.csproj" />
+    <ProjectReference Include="..\PersonalBlog.Infrastructure\PersonalBlog.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

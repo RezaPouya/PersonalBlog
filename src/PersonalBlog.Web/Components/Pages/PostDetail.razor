@@ -1,0 +1,183 @@
+@page "/post/{Slug}"
+@inject IPostService PostService
+@inject IVisitService VisitService
+@inject ICommentService CommentService
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject IOptions<RecaptchaSettings> RecaptchaOptions
+@using Microsoft.Extensions.Options
+@using PersonalBlog.AppServices.Options
+@rendermode InteractiveServer
+
+@if (_post is null)
+{
+    <div class="container py-5"><p>در حال بارگذاری...</p></div>
+}
+else
+{
+    <PageTitle>@(_post.MetaTitle ?? _post.Title)</PageTitle>
+    <HeadContent>
+        <meta name="description" content="@(_post.MetaDescription ?? _post.Summary)" />
+        <meta property="og:title" content="@_post.Title" />
+        <meta property="og:description" content="@_post.Summary" />
+        <meta property="og:type" content="article" />
+        @if (!string.IsNullOrWhiteSpace(_post.OgImageUrl))
+        {
+            <meta property="og:image" content="@_post.OgImageUrl" />
+        }
+        <meta name="twitter:card" content="summary_large_image" />
+        <link rel="canonical" href="@_pageUrl" />
+        <script type="application/ld+json">
+            @((MarkupString)_jsonLd)
+        </script>
+    </HeadContent>
+
+    <div class="container py-4">
+        <div class="row">
+            <div class="col-lg-8">
+                <span class="badge bg-secondary-subtle text-secondary-emphasis mb-2">@_post.CategoryTitle</span>
+                <h1 class="mb-3">@_post.Title</h1>
+                <div class="d-flex gap-3 text-muted small mb-4">
+                    <span><i class="bi bi-calendar"></i> @(_post.PublishedAt?.ToString("yyyy/MM/dd"))</span>
+                    <span><i class="bi bi-eye"></i> @_post.ViewCount بازدید</span>
+                    @if (_post.CourseTitle != null)
+                    {
+                        <span><i class="bi bi-collection"></i> بخشی از دوره‌ی <a href="/course/@_post.Slug">@_post.CourseTitle</a></span>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_post.CoverImageUrl))
+                {
+                    <img src="@_post.CoverImageUrl" class="img-fluid rounded mb-4" alt="@_post.Title" />
+                }
+
+                <div class="post-content mb-4">
+                    @((MarkupString)_post.Content)
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    @foreach (var tag in _post.Tags)
+                    {
+                        <span class="badge bg-light text-dark border">#@tag</span>
+                    }
+                </div>
+
+                <div class="mb-5">
+                    <h6 class="mb-2">اشتراک‌گذاری این پست</h6>
+                    <ShareButtons PageUrl="@_pageUrl" Title="@_post.Title" />
+                </div>
+
+                <hr />
+
+                <h4 class="mb-3">نظرات (@_post.Comments.Count)</h4>
+                @foreach (var comment in _post.Comments)
+                {
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between">
+                            <strong>@comment.DisplayName</strong>
+                            <span class="text-muted small">@comment.CreatedAt.ToString("yyyy/MM/dd HH:mm")</span>
+                        </div>
+                        <p class="mb-0 mt-2">@comment.Content</p>
+
+                        @foreach (var reply in comment.Replies)
+                        {
+                            <div class="border-start ps-3 mt-3 ms-3">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@reply.DisplayName</strong>
+                                    <span class="text-muted small">@reply.CreatedAt.ToString("yyyy/MM/dd HH:mm")</span>
+                                </div>
+                                <p class="mb-0 mt-2">@reply.Content</p>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title">ثبت نظر جدید</h5>
+
+                        @if (_commentSubmitted)
+                        {
+                            <p class="text-success">نظر شما ثبت شد و پس از تأیید نمایش داده می‌شود. متشکریم!</p>
+                        }
+                        else
+                        {
+                            <EditForm Model="_commentInput" OnValidSubmit="SubmitCommentAsync">
+                                <DataAnnotationsValidator />
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <input class="form-control" placeholder="نام شما" @bind="_commentInput.DisplayName" required />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="email" class="form-control" placeholder="ایمیل (نمایش داده نمی‌شود)" @bind="_commentInput.Email" required />
+                                    </div>
+                                    <div class="col-12">
+                                        <textarea class="form-control" rows="4" placeholder="متن نظر شما" @bind="_commentInput.Content" required></textarea>
+                                    </div>
+                                </div>
+
+                                @* در نسخه‌ی نهایی، اینجا ویجت گوگل reCAPTCHA (v2/v3) رندر شده
+                                   و مقدار توکن در _commentInput.RecaptchaToken قرار می‌گیرد. *@
+                                <div class="g-recaptcha my-2" data-sitekey="@RecaptchaOptions.Value.SiteKey"></div>
+
+                                <button type="submit" class="btn btn-primary mt-2">ارسال نظر</button>
+                            </EditForm>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <Sidebar />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = default!;
+
+    private PostDetailDto? _post;
+    private string _pageUrl = string.Empty;
+    private string _jsonLd = "{}";
+    private readonly CreateCommentInputDto _commentInput = new();
+    private bool _commentSubmitted;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _post = await PostService.GetBySlugAsync(Slug);
+
+        if (_post is null)
+        {
+            Navigation.NavigateTo("/", forceLoad: false);
+            return;
+        }
+
+        _pageUrl = Navigation.Uri;
+        _commentInput.PostId = _post.Id;
+
+        _jsonLd = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            context = "https://schema.org",
+            type = "BlogPosting",
+            headline = _post.Title,
+            description = _post.Summary,
+            datePublished = _post.PublishedAt
+        });
+
+        var httpContext = HttpContextAccessor.HttpContext;
+        var ip = httpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var userAgent = httpContext?.Request.Headers.UserAgent.ToString();
+
+        await VisitService.RegisterVisitAsync(_post.Id, ip, userAgent);
+    }
+
+    private async Task SubmitCommentAsync()
+    {
+        var httpContext = HttpContextAccessor.HttpContext;
+        var ip = httpContext?.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        await CommentService.SubmitAsync(_commentInput, ip);
+        _commentSubmitted = true;
+    }
+}

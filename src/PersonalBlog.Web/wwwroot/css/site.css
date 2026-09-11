@@ -1,0 +1,18 @@
+body {
+    font-family: "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+}
+
+.post-content img {
+    max-width: 100%;
+    border-radius: 8px;
+}
+
+.post-content pre {
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+}
+
+.card-img-top {
+    object-fit: cover;
+}

@@ -1,0 +1,37 @@
+@inject ISubscriptionService SubscriptionService
+
+@if (_submitted)
+{
+    <p class="text-success mb-0">با تشکر! ایمیل شما ثبت شد.</p>
+}
+else
+{
+    <EditForm Model="_input" OnValidSubmit="SubmitAsync" class="d-flex gap-2 justify-content-center">
+        <DataAnnotationsValidator />
+        <input type="email" class="form-control" style="max-width:300px" placeholder="ایمیل شما" @bind="_input.Email" required />
+        <button type="submit" class="btn btn-primary">عضویت</button>
+    </EditForm>
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <p class="text-danger small mt-2 mb-0">@_error</p>
+    }
+}
+
+@code {
+    private readonly CreateSubscriptionInputDto _input = new();
+    private bool _submitted;
+    private string? _error;
+
+    private async Task SubmitAsync()
+    {
+        try
+        {
+            await SubscriptionService.SubscribeAsync(_input);
+            _submitted = true;
+        }
+        catch (Exception)
+        {
+            _error = "متأسفانه مشکلی پیش آمد، دوباره تلاش کنید.";
+        }
+    }
+}

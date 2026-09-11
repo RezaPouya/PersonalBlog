@@ -1,0 +1,31 @@
+@inherits LayoutComponentBase
+@attribute [Authorize(Policy = "AdminOnly")]
+
+<div class="d-flex" style="min-height:100vh">
+    <aside class="bg-dark text-light p-3" style="width:240px;">
+        <h5 class="mb-4">پنل مدیریت</h5>
+        <ul class="nav nav-pills flex-column gap-1">
+            <li class="nav-item"><a class="nav-link text-light" href="/admin">داشبورد</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="/admin/posts">پست‌ها</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="/admin/categories">دسته‌بندی‌ها</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="/admin/tags">تگ‌ها</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="/admin/comments">نظرات</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="/admin/courses">دوره‌ها</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="/admin/projects">پروژه‌ها</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="/admin/messages">پیام‌های تماس</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="/admin/subscriptions">مشترکین خبرنامه</a></li>
+            <li class="nav-item mt-3">
+                <form method="post" action="/admin/logout">
+                    <button type="submit" class="btn btn-outline-light btn-sm w-100">خروج</button>
+                </form>
+            </li>
+            <li class="nav-item"><a class="nav-link text-light-emphasis" href="/" target="_blank"><i class="bi bi-box-arrow-up-left"></i> مشاهده‌ی سایت</a></li>
+        </ul>
+    </aside>
+
+    <div class="flex-grow-1 bg-light">
+        <div class="container-fluid py-4">
+            @Body
+        </div>
+    </div>
+</div>

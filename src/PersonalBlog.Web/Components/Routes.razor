@@ -1,0 +1,19 @@
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                <RedirectToLogin />
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="typeof(Layout.MainLayout)">
+            <div class="container py-5 text-center">
+                <h1 class="display-4">۴۰۴</h1>
+                <p class="lead">صفحه‌ی مورد نظر پیدا نشد.</p>
+                <a href="/" class="btn btn-primary">بازگشت به صفحه‌ی اصلی</a>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>

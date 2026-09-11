@@ -1,0 +1,47 @@
+@page "/course/{Slug}"
+@inject ICourseService CourseService
+@inject IPostService PostService
+
+<div class="container py-4">
+    @if (_course is null)
+    {
+        <p>در حال بارگذاری...</p>
+    }
+    else
+    {
+        <PageTitle>دوره: @_course.Title</PageTitle>
+        <h1 class="mb-2">@_course.Title</h1>
+        <p class="text-muted mb-4">@_course.Description</p>
+
+        <ol class="list-group list-group-numbered">
+            @foreach (var post in _posts)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="/post/@post.Slug" class="text-decoration-none">@post.Title</a>
+                    <span class="text-muted small">@post.ViewCount بازدید</span>
+                </li>
+            }
+        </ol>
+    }
+</div>
+
+@code {
+    [Parameter] public string Slug { get; set; } = default!;
+
+    private CourseDto? _course;
+    private List<PostListItemDto> _posts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _course = await CourseService.GetBySlugAsync(Slug);
+        if (_course != null)
+        {
+            var (items, _) = await PostService.GetListAsync(new PostListFilterDto
+            {
+                CourseId = _course.Id,
+                PageSize = 100
+            });
+            _posts = items;
+        }
+    }
+}

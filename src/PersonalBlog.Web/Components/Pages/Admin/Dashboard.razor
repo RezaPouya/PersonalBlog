@@ -1,0 +1,60 @@
+@page "/admin"
+@layout PersonalBlog.Web.Components.Layout.AdminLayout
+@attribute [Authorize(Policy = "AdminOnly")]
+@inject IPostService PostService
+@inject ICommentService CommentService
+@inject IContactMessageService ContactMessageService
+@inject ISubscriptionService SubscriptionService
+
+<PageTitle>داشبورد مدیریت</PageTitle>
+<h1 class="mb-4">داشبورد</h1>
+
+<div class="row g-3">
+    <div class="col-md-3">
+        <div class="card text-bg-primary"><div class="card-body">
+            <div class="fs-2 fw-bold">@_totalPosts</div>
+            <div>کل پست‌ها</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-warning"><div class="card-body">
+            <div class="fs-2 fw-bold">@_pendingComments</div>
+            <div>نظرات در انتظار تأیید</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info"><div class="card-body">
+            <div class="fs-2 fw-bold">@_unreadMessages</div>
+            <div>پیام‌های خوانده‌نشده</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-success"><div class="card-body">
+            <div class="fs-2 fw-bold">@_subscribers</div>
+            <div>مشترکین فعال خبرنامه</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="mt-4 d-flex gap-2">
+    <a href="/admin/posts/new" class="btn btn-primary">+ پست جدید</a>
+    <a href="/admin/comments" class="btn btn-outline-secondary">مدیریت نظرات</a>
+    <a href="/admin/messages" class="btn btn-outline-secondary">پیام‌های تماس</a>
+</div>
+
+@code {
+    private int _totalPosts;
+    private int _pendingComments;
+    private int _unreadMessages;
+    private int _subscribers;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var (_, total) = await PostService.GetListAsync(new PostListFilterDto { OnlyPublished = false, PageSize = 1 });
+        _totalPosts = total;
+
+        _pendingComments = (await CommentService.GetPendingAsync()).Count;
+        _unreadMessages = (await ContactMessageService.GetAllAsync()).Count(m => !m.IsRead);
+        _subscribers = (await SubscriptionService.GetActiveAsync()).Count;
+    }
+}

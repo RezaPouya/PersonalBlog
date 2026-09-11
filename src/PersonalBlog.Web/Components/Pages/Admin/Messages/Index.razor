@@ -1,0 +1,39 @@
+@page "/admin/messages"
+@layout PersonalBlog.Web.Components.Layout.AdminLayout
+@attribute [Authorize(Policy = "AdminOnly")]
+@inject IContactMessageService ContactMessageService
+@rendermode InteractiveServer
+
+<h1 class="mb-4">پیام‌های تماس با ما</h1>
+
+@foreach (var message in _messages)
+{
+    <div class="card mb-3 @(message.IsRead ? "" : "border-primary")">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <strong>@message.FullName (@message.Email)</strong>
+                <span class="text-muted small">@message.CreatedAt.ToString("yyyy/MM/dd HH:mm")</span>
+            </div>
+            <h6 class="mt-2">@message.Subject</h6>
+            <p>@message.Body</p>
+            <div class="d-flex gap-2">
+                @if (!message.IsRead)
+                {
+                    <button class="btn btn-sm btn-outline-success" @onclick="() => MarkReadAsync(message.Id)">علامت‌گذاری به‌عنوان خوانده‌شده</button>
+                }
+                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(message.Id)">حذف</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ContactMessageDto> _messages = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => _messages = await ContactMessageService.GetAllAsync();
+
+    private async Task MarkReadAsync(long id) { await ContactMessageService.MarkAsReadAsync(id); await LoadAsync(); }
+    private async Task DeleteAsync(long id) { await ContactMessageService.DeleteAsync(id); await LoadAsync(); }
+}

@@ -1,0 +1,46 @@
+@page "/search"
+@inject ISearchService SearchService
+@rendermode InteractiveServer
+
+<div class="container py-4">
+    <h1 class="mb-4">جستجو در پست‌ها</h1>
+
+    <EditForm Model="this" OnValidSubmit="SearchAsync" class="mb-4">
+        <div class="input-group">
+            <input class="form-control" placeholder="عبارت مورد نظر را وارد کنید..." @bind="_query" />
+            <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> جستجو</button>
+        </div>
+    </EditForm>
+
+    @if (_searched)
+    {
+        @if (_results.Count == 0)
+        {
+            <p class="text-muted">نتیجه‌ای یافت نشد.</p>
+        }
+        else
+        {
+            <p class="text-muted">@_results.Count نتیجه یافت شد.</p>
+            @foreach (var result in _results)
+            {
+                <div class="border-bottom py-3">
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis mb-1">@result.CategoryTitle</span>
+                    <h5><a href="/post/@result.Slug" class="text-decoration-none">@result.Title</a></h5>
+                    <p class="text-muted mb-0">@result.Summary</p>
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    private string _query = string.Empty;
+    private List<SearchResultDto> _results = new();
+    private bool _searched;
+
+    private async Task SearchAsync()
+    {
+        _results = await SearchService.SearchAsync(_query);
+        _searched = true;
+    }
+}

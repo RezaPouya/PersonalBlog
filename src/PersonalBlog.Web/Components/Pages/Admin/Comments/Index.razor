@@ -1,0 +1,44 @@
+@page "/admin/comments"
+@layout PersonalBlog.Web.Components.Layout.AdminLayout
+@attribute [Authorize(Policy = "AdminOnly")]
+@inject ICommentService CommentService
+@rendermode InteractiveServer
+
+<h1 class="mb-4">نظرات در انتظار تأیید</h1>
+
+@if (_comments.Count == 0)
+{
+    <p class="text-muted">نظر جدیدی برای بررسی وجود ندارد.</p>
+}
+else
+{
+    @foreach (var comment in _comments)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <strong>@comment.DisplayName</strong>
+                    <span class="text-muted small">@comment.CreatedAt.ToString("yyyy/MM/dd HH:mm")</span>
+                </div>
+                <p class="mt-2">@comment.Content</p>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-success" @onclick="() => ApproveAsync(comment.Id)">تأیید</button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RejectAsync(comment.Id)">رد (اسپم)</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => DeleteAsync(comment.Id)">حذف</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<CommentDto> _comments = new();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => _comments = await CommentService.GetPendingAsync();
+
+    private async Task ApproveAsync(long id) { await CommentService.ApproveAsync(id); await LoadAsync(); }
+    private async Task RejectAsync(long id) { await CommentService.RejectAsync(id); await LoadAsync(); }
+    private async Task DeleteAsync(long id) { await CommentService.DeleteAsync(id); await LoadAsync(); }
+}
