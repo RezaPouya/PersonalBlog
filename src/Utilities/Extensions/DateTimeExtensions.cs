@@ -1,8 +1,8 @@
 ﻿using DNTPersianUtils.Core;
-using PersonalBlog.Utilities.Dtos;
 using System.Globalization;
+using Utilities.Dtos;
 
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class DateTimeExtensions
 {

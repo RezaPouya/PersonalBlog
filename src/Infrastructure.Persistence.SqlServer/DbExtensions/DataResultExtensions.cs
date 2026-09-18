@@ -1,4 +1,4 @@
-﻿using PersonalBlog.Utilities.Dtos;
+﻿using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 

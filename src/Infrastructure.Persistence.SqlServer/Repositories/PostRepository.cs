@@ -2,7 +2,7 @@
 using PersonalBlog.Domain.Entities.Posts;
 using PersonalBlog.Domain.Entities.Posts.Dtos;
 using PersonalBlog.Domain.Entities.Posts.Entities;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.Repositories;
 

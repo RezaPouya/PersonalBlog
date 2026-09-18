@@ -1,4 +1,3 @@
-using AppServices.Base;
 using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
@@ -7,11 +6,8 @@ using PersonalBlog.Domain.Exceptions;
 
 namespace AppServices.Admin.Posts.Delete;
 
-public class DeletePostCommandHandler(
-    IValidator<DeletePostCommand> validator,
-    ILocalCacheManager localCacheManager,
-    IPostRepository postRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<DeletePostCommand, int>
+public class DeletePostCommandHandler(IValidator<DeletePostCommand> validator,
+    ILocalCacheManager localCacheManager, IPostRepository postRepository, IUnitOfWork unitOfWork) : ICommandHandler<DeletePostCommand, int>
 {
     public async Task<int> Invoke(DeletePostCommand request, CancellationToken cancellationToken)
     {

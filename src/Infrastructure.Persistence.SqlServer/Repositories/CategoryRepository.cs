@@ -1,6 +1,5 @@
 ﻿using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Categories.Dtos;
-using PersonalBlog.Utilities.Dtos;
 using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.Repositories

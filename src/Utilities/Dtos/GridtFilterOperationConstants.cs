@@ -1,4 +1,4 @@
-﻿namespace PersonalBlog.Utilities.Dtos;
+﻿namespace Utilities.Dtos;
 
 public static class GridFilterOperationConstants
 {

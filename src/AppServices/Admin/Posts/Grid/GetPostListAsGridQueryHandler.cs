@@ -1,6 +1,6 @@
 using PersonalBlog.Domain.Entities.Posts;
 using PersonalBlog.Domain.Entities.Posts.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Posts.Grid;
 

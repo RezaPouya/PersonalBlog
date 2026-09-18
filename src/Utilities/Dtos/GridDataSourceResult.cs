@@ -1,4 +1,4 @@
-﻿namespace PersonalBlog.Utilities.Dtos;
+﻿namespace Utilities.Dtos;
 
 public class GridDataSourceResult<T> where T : class
 {

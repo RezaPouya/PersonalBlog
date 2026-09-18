@@ -1,4 +1,4 @@
-﻿namespace PersonalBlog.Utilities.Extensions;
+﻿namespace Utilities.Extensions;
 
 public static class ReflectionExtensions
 {

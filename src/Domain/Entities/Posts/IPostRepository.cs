@@ -1,6 +1,6 @@
 ﻿using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Entities.Posts.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace PersonalBlog.Domain.Entities.Posts;
 

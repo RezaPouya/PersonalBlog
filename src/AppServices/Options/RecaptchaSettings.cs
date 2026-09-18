@@ -1,4 +1,4 @@
-namespace PersonalBlog.AppServices.Options;
+namespace AppServices.Options;
 
 public class RecaptchaSettings
 {

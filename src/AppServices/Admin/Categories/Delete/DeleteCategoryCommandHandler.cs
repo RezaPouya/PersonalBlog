@@ -6,7 +6,7 @@ using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Posts;
 using PersonalBlog.Domain.Exceptions;
 
-namespace AppServices.Admin.Categories.Create;
+namespace AppServices.Admin.Categories.Delete;
 
 public class DeleteCategoryCommandHandler(IValidator<DeleteCategoryCommand> validator,
     ILocalCacheManager localCacheManager,

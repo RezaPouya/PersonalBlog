@@ -1,8 +1,8 @@
-﻿using PersonalBlog.Utilities.Dtos;
-using PersonalBlog.Utilities.Extensions;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
+using Utilities.Dtos;
+using Utilities.Extensions;
 
 namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 

@@ -1,6 +1,6 @@
-﻿using PersonalBlog.Utilities.Extensions;
+﻿using Utilities.Extensions;
 
-namespace Abin.Website.Domain.Entities.SEOs;
+namespace PersonalBlog.Domain.Entities.Slugs;
 
 public static class SlugTemplate
 {

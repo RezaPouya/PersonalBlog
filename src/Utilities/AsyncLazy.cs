@@ -1,5 +1,5 @@
 ﻿// PersonalBlog.Utilities/AsyncLazy.cs
-namespace PersonalBlog.Utilities;
+namespace Utilities;
 
 /// <summary>
 /// یک مقدار تنبل که به صورت ناهمگام مقداردهی می‌شود.

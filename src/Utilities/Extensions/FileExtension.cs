@@ -1,4 +1,4 @@
-﻿using PersonalBlog.Utilities.Extensions;
+﻿using Utilities.Extensions;
 
 namespace Iau.IT.Utility.Extensions;
 

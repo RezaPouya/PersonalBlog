@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class GenericConventionExtensions
 {

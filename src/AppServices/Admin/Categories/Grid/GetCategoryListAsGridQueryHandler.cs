@@ -1,6 +1,6 @@
 ﻿using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Categories.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Categories.Grid;
 

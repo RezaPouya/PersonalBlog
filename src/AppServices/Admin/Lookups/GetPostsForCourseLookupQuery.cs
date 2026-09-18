@@ -1,4 +1,4 @@
-﻿namespace AppServices.Admin.CoursePosts.Lookup;
+﻿namespace AppServices.Admin.Lookups;
 
 public class GetPostsForCourseLookupQuery
 {

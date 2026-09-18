@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class GridParamsInputDto
 {

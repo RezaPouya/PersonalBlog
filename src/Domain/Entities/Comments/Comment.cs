@@ -1,4 +1,6 @@
-namespace PersonalBlog.Domain.Entities.Posts;
+using PersonalBlog.Domain.Entities.Posts;
+
+namespace PersonalBlog.Domain.Entities.Comments;
 
 public class Comment : EntityBase
 {

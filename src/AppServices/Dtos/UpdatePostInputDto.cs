@@ -1,3 +1,3 @@
-﻿namespace PersonalBlog.AppServices.Dtos;
+﻿namespace AppServices.Dtos;
 
 public class UpdatePostInputDto : CreatePostInputDto { public long Id { get; set; } }

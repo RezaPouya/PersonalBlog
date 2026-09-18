@@ -1,4 +1,4 @@
-﻿using PersonalBlog.Utilities.Dtos;
+﻿using Utilities.Dtos;
 
 namespace AppServices.Admin.Tags.Grid;
 

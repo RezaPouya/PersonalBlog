@@ -1,5 +1,5 @@
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
 
 namespace AppServices.Admin.Tags.Create;
 

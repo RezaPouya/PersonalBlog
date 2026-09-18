@@ -1,6 +1,6 @@
 ﻿using PersonalBlog.Domain.Entities.Tags;
 using PersonalBlog.Domain.Entities.Tags.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Tags.Grid;
 

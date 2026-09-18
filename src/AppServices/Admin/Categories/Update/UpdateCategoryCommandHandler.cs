@@ -5,7 +5,7 @@ using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Exceptions;
 
-namespace AppServices.Admin.Categories.Create;
+namespace AppServices.Admin.Categories.Update;
 
 public class UpdateCategoryCommandHandler(IValidator<UpdateCategoryCommand> validator,
     ILocalCacheManager localCacheManager,

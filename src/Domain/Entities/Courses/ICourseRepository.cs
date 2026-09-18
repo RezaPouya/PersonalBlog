@@ -1,6 +1,5 @@
 ﻿using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Entities.Courses.Dtos;
-using PersonalBlog.Utilities.Dtos;
 using Utilities.Dtos;
 
 namespace PersonalBlog.Domain.Entities.Courses;

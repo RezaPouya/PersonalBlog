@@ -2,7 +2,7 @@
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Design;
 
-namespace Iau.Bazaar.Infrastructure.SqlStore;
+namespace Infrastructure.Persistence.SqlServer;
 
 public class DbContextDesignTimeFactory : IDesignTimeDbContextFactory<AppDbContext>
 {

@@ -1,4 +1,4 @@
-﻿namespace PersonalBlog.AppServices.Dtos;
+﻿namespace AppServices.Dtos;
 
 // --- Categories ---
 public class CategoryDto { 

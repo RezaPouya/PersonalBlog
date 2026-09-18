@@ -1,11 +1,11 @@
-using PersonalBlog.Utilities.Dtos;
-using PersonalBlog.Utilities.Expressions;
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
+using Utilities.Dtos;
+using Utilities.Expressions;
+using Utilities.Extensions;
 
-namespace PersonalBlog.Utilities.Expressions;
+namespace Utilities.Expressions;
 
 public static class ExpressionExtensions
 {

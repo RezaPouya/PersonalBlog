@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using PersonalBlog.Domain.Entities.Categories;
+using PersonalBlog.Domain.Entities.Comments;
 using PersonalBlog.Domain.Entities.ContactMessages;
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Posts;

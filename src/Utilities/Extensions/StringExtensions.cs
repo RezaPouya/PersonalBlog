@@ -2,7 +2,7 @@
 using DNTPersianUtils.Core.Normalizer;
 using System.Text.RegularExpressions;
 
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static partial class StringExtensions
 {

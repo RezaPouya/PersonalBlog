@@ -1,4 +1,4 @@
-﻿namespace PersonalBlog.Utilities.Helpers;
+﻿namespace Utilities.Helpers;
 
 public static class StringHelper
 {

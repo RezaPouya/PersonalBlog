@@ -1,6 +1,6 @@
 ﻿using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Courses.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Courses.Grid;
 

@@ -1,4 +1,4 @@
-﻿namespace PersonalBlog.AppServices.Dtos;
+﻿namespace AppServices.Dtos;
 
 // --- Tags ---
 public class TagDto { 

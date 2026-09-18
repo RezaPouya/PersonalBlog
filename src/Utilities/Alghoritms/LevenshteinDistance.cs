@@ -1,4 +1,4 @@
-﻿namespace PersonalBlog.Utilities.Alghoritms;
+﻿namespace Utilities.Alghoritms;
 
 public static class LevenshteinDistance
 {
