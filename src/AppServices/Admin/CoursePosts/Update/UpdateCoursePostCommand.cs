@@ -2,7 +2,7 @@
 
 namespace AppServices.Admin.CoursePosts.Update
 {
-    public class UpdateCoursePostCommand
+    public class UpdateCoursePostCommand : ICommand<int>
     {
         [Required]
         public int Id { get; set; }

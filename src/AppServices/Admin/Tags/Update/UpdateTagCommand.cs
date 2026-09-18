@@ -3,7 +3,7 @@ using Utilities.Extensions;
 
 namespace AppServices.Admin.Tags.Update;
 
-public class UpdateTagCommand
+public class UpdateTagCommand : ICommand<int>
 {
     [Required(ErrorMessage = "شناسه اجباری است")]
     public int Id { get; set; }

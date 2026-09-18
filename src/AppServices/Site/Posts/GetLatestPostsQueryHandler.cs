@@ -1,8 +1,6 @@
-using PersonalBlog.Domain.Entities.Posts;
-
 namespace AppServices.Site.Posts;
 
-public class GetLatestPostsQueryHandler(IPostRepository postRepository)
+public class GetLatestPostsQueryHandler()
     : IQueryHandler<GetLatestPostsQuery, List<GetLatestPostsResult>>
 {
     public async Task<List<GetLatestPostsResult>> Handle(GetLatestPostsQuery input, CancellationToken cancellationToken)

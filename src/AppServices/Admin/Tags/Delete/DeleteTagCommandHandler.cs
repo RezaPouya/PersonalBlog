@@ -13,7 +13,7 @@ public class DeleteTagCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteTagCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         DeleteTagCommand input,
         CancellationToken cancellationToken)
     {

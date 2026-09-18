@@ -633,7 +633,7 @@
 
         try
         {
-            GridDataSourceResult<CourseGridDto> result = await GridHandler.Invoke(
+            GridDataSourceResult<CourseGridDto> result = await GridHandler.Handle(
                 new GetCourseListAsGridQuery
                 {
                     Page = page,
@@ -725,7 +725,7 @@
         {
             if (_editing)
             {
-                await UpdateHandler.Invoke(
+                await UpdateHandler.Handle(
                     _updateModel,
                     CancellationToken.None);
 
@@ -734,7 +734,7 @@
             }
             else
             {
-                await CreateHandler.Invoke(
+                await CreateHandler.Handle(
                     _createModel,
                     CancellationToken.None);
 
@@ -767,7 +767,7 @@
 
         try
         {
-            await DeleteHandler.Invoke(
+            await DeleteHandler.Handle(
                 new DeleteCourseCommand
                 {
                     Id = item.Id

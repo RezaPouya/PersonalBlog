@@ -3,7 +3,7 @@ using Utilities.Extensions;
 
 namespace AppServices.Admin.Posts.Create;
 
-public class CreatePostCommand
+public class CreatePostCommand : ICommand<int>
 {
     [Required(ErrorMessage = "عنوان اجباری است")]
     [MaxLength(250, ErrorMessage = "حداکثر 250 کاراکتر")]

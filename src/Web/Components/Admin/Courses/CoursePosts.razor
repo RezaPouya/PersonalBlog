@@ -631,7 +631,7 @@ else
 
         try
         {
-            _course = await CourseHandler.Invoke(
+            _course = await CourseHandler.Handle(
                 new GetCourseInfoQuery
                 {
                     Id = CourseId
@@ -655,7 +655,7 @@ else
 
         try
         {
-            var result = await GridHandler.Invoke(
+            var result = await GridHandler.Handle(
                 new GetCoursePostsGridQuery
                 {
                     CourseId = CourseId,
@@ -689,7 +689,7 @@ else
     {
         try
         {
-            _posts = await PostsLookup.Invoke(
+            _posts = await PostsLookup.Handle(
                 new GetPostsLookupQuery(),
                 CancellationToken.None)
                 ?? new();
@@ -759,7 +759,7 @@ else
         {
             if (_editing)
             {
-                await UpdateHandler.Invoke(
+                await UpdateHandler.Handle(
                     _updateModel,
                     CancellationToken.None);
 
@@ -768,7 +768,7 @@ else
             }
             else
             {
-                await AddPostHandler.Invoke(
+                await AddPostHandler.Handle(
                     _addModel,
                     CancellationToken.None);
 
@@ -801,7 +801,7 @@ else
 
         try
         {
-            await RemoveHandler.Invoke(
+            await RemoveHandler.Handle(
                 new RemovePostFromCourseCommand
                 {
                     Id = item.Id

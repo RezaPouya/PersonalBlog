@@ -3,7 +3,7 @@ using Utilities.Extensions;
 
 namespace AppServices.Admin.Posts.Update;
 
-public class UpdatePostCommand
+public class UpdatePostCommand : ICommand<int>
 {
     [Required]
     public int Id { get; set; }

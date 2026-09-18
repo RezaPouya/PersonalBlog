@@ -9,7 +9,7 @@ public class PostDto
     public string Slug { get; set; } = default!;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public string TinyUrl { get; set; }
+    public string? TinyUrl { get; set; }
     public string Summary { get; set; } = default!;
     public string Content { get; set; } = default!;
     public string? CoverImageUrl { get; set; }

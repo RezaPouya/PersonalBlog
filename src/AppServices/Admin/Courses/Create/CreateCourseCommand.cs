@@ -3,7 +3,7 @@ using Utilities.Extensions;
 
 namespace AppServices.Admin.Courses.Create;
 
-public class CreateCourseCommand
+public class CreateCourseCommand : ICommand<int>
 {
     [Required]
     [MaxLength(200)]

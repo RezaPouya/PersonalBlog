@@ -65,7 +65,7 @@ else
     {
         try
         {
-            _posts = await LatestPostsHandler.Invoke(new GetLatestPostsQuery { Count = 10 }, CancellationToken.None);
+            _posts = await LatestPostsHandler.Handle(new GetLatestPostsQuery { Count = 10 }, CancellationToken.None);
         }
         catch
         {

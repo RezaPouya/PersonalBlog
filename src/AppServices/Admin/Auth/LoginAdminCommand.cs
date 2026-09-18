@@ -2,7 +2,7 @@
 
 namespace AppServices.Admin.Auth;
 
-public class LoginAdminCommand
+public class LoginAdminCommand : ICommand<bool>
 {
     [Required(ErrorMessage = "ایمیل اجباری است")]
     [EmailAddress(ErrorMessage = "ایمیل معتبر نیست")]

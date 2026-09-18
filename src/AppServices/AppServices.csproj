@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Admin\Tags\Read\" />
     <Folder Include="Site\Categories\" />
   </ItemGroup>
 

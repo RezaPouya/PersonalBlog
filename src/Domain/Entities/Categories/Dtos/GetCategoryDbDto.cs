@@ -12,7 +12,7 @@ public class CategoryDot
     public string UpdatedAtPersian => UpdatedAt.ToShortPersianDateTimeString();
     public string Title { get; set; } = default!;
     public string Slug { get; set; } = default!;
-    public string TinyUrl { get; set; }
+    public string? TinyUrl { get; set; }
     public string? Description { get; set; }
     public bool IsInEnglish { get; set; }
     public int PostsCount { get; set; }

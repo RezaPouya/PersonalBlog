@@ -10,7 +10,7 @@ public class DeleteCourseCommandHandler(IValidator<DeleteCourseCommand> validato
     ILocalCacheManager localCacheManager, ICourseRepository courseRepository, IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteCourseCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         DeleteCourseCommand input,
         CancellationToken cancellationToken)
     {

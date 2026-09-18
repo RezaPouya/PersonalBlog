@@ -260,7 +260,7 @@
 
         try
         {
-            GridDataSourceResult<TagGridDto> result = await GridHandler.Invoke(
+            GridDataSourceResult<TagGridDto> result = await GridHandler.Handle(
                 new GetTagListAsGridQuery
                 {
                     Page = page,
@@ -331,13 +331,13 @@
         {
             if (_editing)
             {
-                await UpdateHandler.Invoke(
+                await UpdateHandler.Handle(
                     _updateModel,
                     CancellationToken.None);
             }
             else
             {
-                await CreateHandler.Invoke(
+                await CreateHandler.Handle(
                     _createModel,
                     CancellationToken.None);
             }
@@ -371,7 +371,7 @@
 
         try
         {
-            await DeleteHandler.Invoke(
+            await DeleteHandler.Handle(
                 new DeleteTagCommand
                 {
                     Id = item.Id

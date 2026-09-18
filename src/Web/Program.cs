@@ -83,7 +83,7 @@ app.MapPost("/admin/login", async (
 {
     try
     {
-        await handler.Invoke(model, httpContext.RequestAborted);
+        await handler.Handle(model, httpContext.RequestAborted);
         return Results.Redirect("/admin");
     }
     catch (Exception ex)

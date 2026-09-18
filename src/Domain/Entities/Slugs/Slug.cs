@@ -12,7 +12,7 @@ public class Slug : EntityBase
     public const string Article = "article";
     public const string Author = "author";
 
-    public Slug() { }
+    private Slug() { }
 
     public static Slug CreateRedirection(string url, string redirectUrl)
     {
@@ -36,15 +36,15 @@ public class Slug : EntityBase
         };
     }
 
-    public static Slug SyncRedirectCreate(Slug seoUrl, string sEOUrl)
+    public static Slug SyncRedirectCreate(Slug slug, string slugUrl)
     {
         return new Slug()
         {
-            EntityId = seoUrl.EntityId,
-            EntityType = seoUrl.EntityType,
-            Url = sEOUrl.StringNormalization(toLower: true),
+            EntityId = slug.EntityId,
+            EntityType = slug.EntityType,
+            Url = slugUrl.StringNormalization(toLower: true),
             HasRedirectUrl = true,
-            RedirectUrl = seoUrl.Url,
+            RedirectUrl = slug.Url,
 
         };
     }
@@ -52,9 +52,9 @@ public class Slug : EntityBase
     public int EntityId { get; set; }
     public string EntityType { get; set; }
     public string Url { get; set; }
-    public string TinyUrl { get; set; }
+    public string? TinyUrl { get; set; }
     public bool HasRedirectUrl { get; set; }
-    public string RedirectUrl { get; set; }
+    public string? RedirectUrl { get; set; }
 
     public void UpdateUrl(string url)
     {

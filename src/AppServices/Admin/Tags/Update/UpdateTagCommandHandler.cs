@@ -13,7 +13,7 @@ public class UpdateTagCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<UpdateTagCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         UpdateTagCommand input,
         CancellationToken cancellationToken)
     {

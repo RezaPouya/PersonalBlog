@@ -3,7 +3,7 @@ using Utilities.Extensions;
 
 namespace AppServices.Admin.Courses.Update;
 
-public class UpdateCourseCommand
+public class UpdateCourseCommand : ICommand<int>
 {
     [Required]
     public int Id { get; set; }

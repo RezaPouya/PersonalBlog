@@ -9,7 +9,7 @@ namespace AppServices.Admin.Auth;
 public class LoginAdminCommandHandler(IValidator<LoginAdminCommand> validator,
     ICaptchaService captchaService, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager) : ICommandHandler<LoginAdminCommand, bool>
 {
-    public async Task<bool> Invoke(LoginAdminCommand input, CancellationToken cancellationToken)
+    public async Task<bool> Handle(LoginAdminCommand input, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
         if (!validationResult.IsValid)

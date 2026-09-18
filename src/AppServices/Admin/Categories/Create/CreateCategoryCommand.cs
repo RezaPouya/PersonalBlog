@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Utilities.Extensions;
 
-public class CreateCategoryCommand
+public class CreateCategoryCommand : ICommand<int>
 {
     [Required(ErrorMessage = "عنوان اجباری است")]
     [MaxLength(100, ErrorMessage = "حداکثر 150 کاراکتر")]

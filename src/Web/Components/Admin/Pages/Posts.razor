@@ -1,11 +1,11 @@
 @page "/admin/posts"
 @layout Web.Components.Admin.Layout.AdminLayout
 @rendermode InteractiveServer
-@using AppServices.Admin.Posts.Grid
 @using AppServices.Admin.Posts.Delete
+@using AppServices.Admin.Posts.Grid
 @using AppServices.Base
-@using PersonalBlog.Utilities.Dtos
 @using PersonalBlog.Domain.Entities.Posts.Dtos
+@using Utilities.Dtos
 @inject IQueryHandler<GetPostListAsGridQuery, GridDataSourceResult<PostGridDto>> GridHandler
 @inject ICommandHandler<DeletePostCommand, int> DeleteHandler
 @inject NavigationManager Nav
@@ -126,7 +126,7 @@ else
         _page = page;
         try
         {
-            var result = await GridHandler.Invoke(new GetPostListAsGridQuery
+            var result = await GridHandler.Handle(new GetPostListAsGridQuery
             {
                 Page = _page,
                 PageSize = _pageSize
@@ -154,7 +154,7 @@ else
         _deleting = true;
         try
         {
-            await DeleteHandler.Invoke(new DeletePostCommand { Id = item.Id }, CancellationToken.None);
+            await DeleteHandler.Handle(new DeletePostCommand { Id = item.Id }, CancellationToken.None);
             _message = $"مطلب «{item.Title}» حذف شد.";
             _isError = false;
             await LoadPage(_page);

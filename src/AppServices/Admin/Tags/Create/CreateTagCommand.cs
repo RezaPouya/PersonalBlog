@@ -3,7 +3,7 @@ using Utilities.Extensions;
 
 namespace AppServices.Admin.Tags.Create;
 
-public class CreateTagCommand
+public class CreateTagCommand : ICommand<int>
 {
     [Required(ErrorMessage = "عنوان اجباری است")]
     [MaxLength(100)]

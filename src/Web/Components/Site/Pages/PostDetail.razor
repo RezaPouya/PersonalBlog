@@ -74,7 +74,7 @@ else
         _loading = true;
         try
         {
-            _post = await PostHandler.Invoke(new GetPostBySlugQuery { Slug = Slug }, CancellationToken.None);
+            _post = await PostHandler.Handle(new GetPostBySlugQuery { Slug = Slug }, CancellationToken.None);
         }
         catch
         {

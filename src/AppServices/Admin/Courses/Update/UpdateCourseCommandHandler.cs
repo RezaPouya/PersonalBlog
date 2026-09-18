@@ -13,7 +13,7 @@ public class UpdateCourseCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<UpdateCourseCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         UpdateCourseCommand input,
         CancellationToken cancellationToken)
     {

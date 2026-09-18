@@ -1,6 +1,6 @@
 ﻿namespace AppServices.Admin.Courses.Delete;
 
-public class DeleteCourseCommand
+public class DeleteCourseCommand : ICommand<int>
 {
     public int Id { get; set; }
 }

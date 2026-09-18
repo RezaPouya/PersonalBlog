@@ -11,7 +11,7 @@ public class UpdateCoursePostCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<UpdateCoursePostCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         UpdateCoursePostCommand input,
         CancellationToken cancellationToken)
     {

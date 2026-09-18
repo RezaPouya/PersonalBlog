@@ -1,5 +1,4 @@
-﻿using AppServices.Base;
-using FluentValidation;
+﻿using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Categories;
@@ -14,7 +13,7 @@ public class DeleteCategoryCommandHandler(IValidator<DeleteCategoryCommand> vali
     ICategoryRepository categoryRepository, IUnitOfWork unitOfWork) : ICommandHandler<DeleteCategoryCommand, int>
 {
 
-    public async Task<int> Invoke(DeleteCategoryCommand request, CancellationToken cancellationToken)
+    public async Task<int> Handle(DeleteCategoryCommand request, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(request);
 

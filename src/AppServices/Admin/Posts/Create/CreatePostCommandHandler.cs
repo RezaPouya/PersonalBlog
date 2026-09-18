@@ -17,7 +17,7 @@ public class CreatePostCommandHandler(
     IHtmlSanitizerService htmlSanitizerService,
     IUnitOfWork unitOfWork) : ICommandHandler<CreatePostCommand, int>
 {
-    public async Task<int> Invoke(CreatePostCommand input, CancellationToken cancellationToken)
+    public async Task<int> Handle(CreatePostCommand input, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
         if (!validationResult.IsValid)

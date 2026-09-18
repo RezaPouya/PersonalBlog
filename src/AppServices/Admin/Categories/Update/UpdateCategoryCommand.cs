@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Utilities.Extensions;
 
-public class UpdateCategoryCommand
+public class UpdateCategoryCommand : ICommand<int>
 {
     [Required(ErrorMessage = "شناسه اجباری است")]
     public int Id { get; set; }

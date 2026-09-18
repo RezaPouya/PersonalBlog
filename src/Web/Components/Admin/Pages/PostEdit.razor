@@ -148,10 +148,10 @@ else
         _success = null;
         try
         {
-            _categories = await CategoriesLookup.Invoke(new GetCategoriesLookupQuery(), CancellationToken.None);
-            _tags = await TagsLookup.Invoke(new GetTagsLookupQuery(), CancellationToken.None);
+            _categories = await CategoriesLookup.Handle(new GetCategoriesLookupQuery(), CancellationToken.None);
+            _tags = await TagsLookup.Handle(new GetTagsLookupQuery(), CancellationToken.None);
 
-            var post = await GetHandler.Invoke(new GetPostQuery { Id = Id }, CancellationToken.None);
+            var post = await GetHandler.Handle(new GetPostQuery { Id = Id }, CancellationToken.None);
             _model = new UpdatePostCommand
             {
                 Id = post.Id,
@@ -199,7 +199,7 @@ else
         try
         {
             _model.TagIds = _selectedTagIds.ToList();
-            await UpdateHandler.Invoke(_model, CancellationToken.None);
+            await UpdateHandler.Handle(_model, CancellationToken.None);
             _success = "تغییرات ذخیره شد.";
         }
         catch (Exception ex)

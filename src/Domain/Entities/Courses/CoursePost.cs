@@ -1,4 +1,3 @@
-using PersonalBlog.Domain.Commons.Base;
 using PersonalBlog.Domain.Entities.Posts;
 
 namespace PersonalBlog.Domain.Entities.Courses;
@@ -12,6 +11,6 @@ public class CoursePost : EntityBase
     public string? CoverImageUrl { get; set; }
     public bool IsPublished { get; set; } = true;
     public int OrderInCourse { get; set; }
-    public virtual Course Course { get; set; }
-    public virtual Post Post { get; set; }
+    public virtual Course? Course { get; set; }
+    public virtual Post? Post { get; set; }
 }

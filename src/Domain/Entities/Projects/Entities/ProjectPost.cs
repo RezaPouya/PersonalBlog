@@ -11,8 +11,8 @@ namespace PersonalBlog.Domain.Entities.Projects.Entities
         public string? CoverImageUrl { get; set; }
         public bool IsPublished { get; set; } = true;
         public int OrderInCourse { get; set; }
-        public virtual Project Project { get; set; }
-        public virtual Post Post { get; set; }
+        public virtual Project? Project { get; set; }
+        public virtual Post? Post { get; set; }
 
 
     }

@@ -1,5 +1,4 @@
-﻿using AppServices.Base;
-using FluentValidation;
+﻿using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Categories;
@@ -9,10 +8,11 @@ namespace AppServices.Admin.Categories.Update;
 
 public class UpdateCategoryCommandHandler(IValidator<UpdateCategoryCommand> validator,
     ILocalCacheManager localCacheManager,
-    ICategoryRepository categoryRepository, IUnitOfWork unitOfWork) : ICommandHandler<UpdateCategoryCommand, int>
+    ICategoryRepository categoryRepository,
+    IUnitOfWork unitOfWork) : ICommandHandler<UpdateCategoryCommand, int>
 {
 
-    public async Task<int> Invoke(UpdateCategoryCommand input, CancellationToken cancellationToken)
+    public async Task<int> Handle(UpdateCategoryCommand input, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
 

@@ -3,8 +3,8 @@
 @rendermode InteractiveServer
 @using AppServices.Admin.Categories.Grid
 @using AppServices.Base
-@using PersonalBlog.Utilities.Dtos
 @using PersonalBlog.Domain.Entities.Categories.Dtos;
+@using Utilities.Dtos
 
 @inject IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<CategoryGridDto>> GridHandler
 
@@ -60,7 +60,7 @@ else
     {
         try
         {
-            var result = await GridHandler.Invoke(new GetCategoryListAsGridQuery
+            var result = await GridHandler.Handle(new GetCategoryListAsGridQuery
             {
                 Page = 1,
                 PageSize = 50

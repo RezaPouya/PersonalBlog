@@ -1,5 +1,4 @@
-﻿using AppServices.Base;
-using FluentValidation;
+﻿using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Categories;
@@ -12,7 +11,7 @@ public class CreateCategoryCommandHandler(IValidator<CreateCategoryCommand> vali
     ICategoryRepository categoryRepository, IUnitOfWork unitOfWork) : ICommandHandler<CreateCategoryCommand, int>
 {
 
-    public async Task<int> Invoke(CreateCategoryCommand input, CancellationToken cancellationToken)
+    public async Task<int> Handle(CreateCategoryCommand input, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
 

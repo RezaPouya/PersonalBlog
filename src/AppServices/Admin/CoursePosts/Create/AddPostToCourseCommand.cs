@@ -2,7 +2,7 @@
 
 namespace AppServices.Admin.CoursePosts.Create;
 
-public class AddPostToCourseCommand
+public class AddPostToCourseCommand : ICommand<int>
 {
     [Required]
     public int CourseId { get; set; }

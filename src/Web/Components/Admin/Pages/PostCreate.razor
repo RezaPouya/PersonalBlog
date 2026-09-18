@@ -121,8 +121,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _categories = await CategoriesLookup.Invoke(new GetCategoriesLookupQuery(), CancellationToken.None);
-        _tags = await TagsLookup.Invoke(new GetTagsLookupQuery(), CancellationToken.None);
+        _categories = await CategoriesLookup.Handle(new GetCategoriesLookupQuery(), CancellationToken.None);
+        _tags = await TagsLookup.Handle(new GetTagsLookupQuery(), CancellationToken.None);
     }
 
     private void ToggleTag(int id, bool selected)
@@ -138,7 +138,7 @@
         try
         {
             _model.TagIds = _selectedTagIds.ToList();
-            var id = await CreateHandler.Invoke(_model, CancellationToken.None);
+            var id = await CreateHandler.Handle(_model, CancellationToken.None);
             Nav.NavigateTo($"/admin/posts/edit/{id}");
         }
         catch (Exception ex)

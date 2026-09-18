@@ -4,8 +4,7 @@ using Utilities.Dtos;
 
 namespace AppServices.Admin.CoursePosts.Grid;
 
-public class GetCoursePostsGridQueryHandler(
-    ICoursePostRepository coursePostRepository)
+public class GetCoursePostsGridQueryHandler(ICoursePostRepository coursePostRepository)
     : IQueryHandler<
         GetCoursePostsGridQuery,
         GridDataSourceResult<CoursePostGridDto>>

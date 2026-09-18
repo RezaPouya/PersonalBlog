@@ -1,8 +1,6 @@
-using PersonalBlog.Domain.Entities.Posts;
-
 namespace AppServices.Site.Posts;
 
-public class GetPostBySlugQueryHandler(IPostRepository postRepository)
+public class GetPostBySlugQueryHandler()
     : IQueryHandler<GetPostBySlugQuery, GetPostBySlugResult>
 {
     public async Task<GetPostBySlugResult> Handle(GetPostBySlugQuery input, CancellationToken cancellationToken)

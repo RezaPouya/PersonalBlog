@@ -9,7 +9,7 @@ namespace AppServices.Admin.Posts.Delete;
 public class DeletePostCommandHandler(IValidator<DeletePostCommand> validator,
     ILocalCacheManager localCacheManager, IPostRepository postRepository, IUnitOfWork unitOfWork) : ICommandHandler<DeletePostCommand, int>
 {
-    public async Task<int> Invoke(DeletePostCommand request, CancellationToken cancellationToken)
+    public async Task<int> Handle(DeletePostCommand request, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(request);
         if (!validationResult.IsValid)

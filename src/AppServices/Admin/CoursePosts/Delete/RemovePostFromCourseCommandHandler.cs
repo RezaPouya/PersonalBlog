@@ -11,7 +11,7 @@ public class RemovePostFromCourseCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<RemovePostFromCourseCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         RemovePostFromCourseCommand input,
         CancellationToken cancellationToken)
     {
