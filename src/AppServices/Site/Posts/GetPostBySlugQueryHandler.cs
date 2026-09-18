@@ -5,7 +5,7 @@ namespace AppServices.Site.Posts;
 public class GetPostBySlugQueryHandler(IPostRepository postRepository)
     : IQueryHandler<GetPostBySlugQuery, GetPostBySlugResult>
 {
-    public async Task<GetPostBySlugResult> Invoke(GetPostBySlugQuery input, CancellationToken cancellationToken)
+    public async Task<GetPostBySlugResult> Handle(GetPostBySlugQuery input, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
 

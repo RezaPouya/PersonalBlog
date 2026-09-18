@@ -5,7 +5,7 @@ namespace AppServices.Site.Posts;
 public class GetLatestPostsQueryHandler(IPostRepository postRepository)
     : IQueryHandler<GetLatestPostsQuery, List<GetLatestPostsResult>>
 {
-    public async Task<List<GetLatestPostsResult>> Invoke(GetLatestPostsQuery input, CancellationToken cancellationToken)
+    public async Task<List<GetLatestPostsResult>> Handle(GetLatestPostsQuery input, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
         //var items = await postRepository.GetLatestPublishedAsync(input.Count, input.IsInEnglish, cancellationToken);

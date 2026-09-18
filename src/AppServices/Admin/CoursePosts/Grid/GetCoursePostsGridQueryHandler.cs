@@ -10,7 +10,7 @@ public class GetCoursePostsGridQueryHandler(
         GetCoursePostsGridQuery,
         GridDataSourceResult<CoursePostGridDto>>
 {
-    public async Task<GridDataSourceResult<CoursePostGridDto>> Invoke(
+    public async Task<GridDataSourceResult<CoursePostGridDto>> Handle(
         GetCoursePostsGridQuery input,
         CancellationToken cancellationToken)
     {

@@ -8,7 +8,7 @@ public class GetTagsLookupQuery { }
 
 public class GetTagsLookupQueryHandler(ITagRepository repo) : AppServices.Base.IQueryHandler<GetTagsLookupQuery, List<IdTitleDto<int>>>
 {
-    public async Task<List<IdTitleDto<int>>> Invoke(GetTagsLookupQuery input, CancellationToken cancellationToken)
+    public async Task<List<IdTitleDto<int>>> Handle(GetTagsLookupQuery input, CancellationToken cancellationToken)
     {
         return await repo.GetListForLookupAsync(cancellationToken);
     }

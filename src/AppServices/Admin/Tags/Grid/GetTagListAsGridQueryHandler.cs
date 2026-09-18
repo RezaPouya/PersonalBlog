@@ -10,7 +10,7 @@ public class GetTagListAsGridQueryHandler(
         GetTagListAsGridQuery,
         GridDataSourceResult<TagGridDto>>
 {
-    public async Task<GridDataSourceResult<TagGridDto>> Invoke(
+    public async Task<GridDataSourceResult<TagGridDto>> Handle(
         GetTagListAsGridQuery input,
         CancellationToken cancellationToken)
     {

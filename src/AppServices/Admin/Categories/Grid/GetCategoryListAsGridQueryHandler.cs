@@ -6,7 +6,7 @@ namespace AppServices.Admin.Categories.Grid;
 
 public class GetCategoryListAsGridQueryHandler(ICategoryRepository categoryRepository) : IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<CategoryGridDto>>
 {
-    public async Task<GridDataSourceResult<CategoryGridDto>> Invoke(GetCategoryListAsGridQuery input,
+    public async Task<GridDataSourceResult<CategoryGridDto>> Handle(GetCategoryListAsGridQuery input,
         CancellationToken cancellationToken)
     {
         GridDataSourceResult<CategoryGridDto> gridResult =
