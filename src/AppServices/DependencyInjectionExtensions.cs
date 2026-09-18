@@ -45,20 +45,25 @@ namespace AppServices
 
         private static void AddCommandsAndQueries(this IServiceCollection services)
         {
-            services.Scan(scan => scan.FromAssemblies(typeof(DependencyInjectionExtensions).Assembly)
+            services.Scan(scan => scan
+                .FromAssemblies(typeof(DependencyInjectionExtensions).Assembly)
 
+                // Command handlers با نتیجه
                 .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<,>)))
                 .AsImplementedInterfaces()
+                .AsSelf()                          // ← این خط اضافه شود
                 .WithScopedLifetime()
 
-                // ۲. ثبت هندلرهای Command که مقداری برنمی‌گردانند (ICommandHandler<TCommand>)
+                // Command handlers بدون نتیجه
                 .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<>)))
                 .AsImplementedInterfaces()
+                .AsSelf()                          // ← این خط اضافه شود
                 .WithScopedLifetime()
 
-                // ۳. ثبت هندلرهای Query (IQueryHandler<TQuery, TResult>)
+                // Query handlers
                 .AddClasses(classes => classes.AssignableTo(typeof(IQueryHandler<,>)))
                 .AsImplementedInterfaces()
+                .AsSelf()                          // ← این خط اضافه شود
                 .WithScopedLifetime()
             );
 

@@ -120,11 +120,89 @@ dotnet run --project src/PersonalBlog.Web           # اجرای سایت
 ```
 
 
-=== FILE: src/AppServices/Admin/Categories/Create/CreateCategoryCommand.cs ===
-using PersonalBlog.Utilities.Extensions;
+=== FILE: src/AppServices/Admin/Auth/LoginAdminCommand.cs ===
 using System.ComponentModel.DataAnnotations;
 
-public class CreateCategoryCommand
+namespace AppServices.Admin.Auth;
+
+public class LoginAdminCommand : ICommand<bool>
+{
+    [Required(ErrorMessage = "ایمیل اجباری است")]
+    [EmailAddress(ErrorMessage = "ایمیل معتبر نیست")]
+    public string Email { get; set; } = default!;
+
+    [Required(ErrorMessage = "رمز عبور اجباری است")]
+    public string Password { get; set; } = default!;
+
+    public bool RememberMe { get; set; }
+
+    public string CaptchaId { get; set; } = default!;
+    public string CaptchaAnswer { get; set; } = default!;
+}
+
+=== FILE: src/AppServices/Admin/Auth/LoginAdminCommandHandler.cs ===
+using AppServices.Commons;
+using FluentValidation;
+using Microsoft.AspNetCore.Identity;
+using PersonalBlog.Domain.Entities.Identities;
+using PersonalBlog.Domain.Exceptions;
+
+namespace AppServices.Admin.Auth;
+
+public class LoginAdminCommandHandler(IValidator<LoginAdminCommand> validator,
+    ICaptchaService captchaService, UserManager<AppUser> userManager, SignInManager<AppUser> signInManager) : ICommandHandler<LoginAdminCommand, bool>
+{
+    public async Task<bool> Handle(LoginAdminCommand input, CancellationToken cancellationToken)
+    {
+        var validationResult = validator.Validate(input);
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
+
+        // اعتبارسنجی کپچا
+        if (!await captchaService.ValidateAsync(input.CaptchaId, input.CaptchaAnswer, cancellationToken))
+            throw new BusinessException("پاسخ کپچا صحیح نیست. لطفاً دوباره تلاش کنید.");
+
+        var user = await userManager.FindByEmailAsync(input.Email);
+        if (user is null)
+            throw new BusinessException("ایمیل یا رمز عبور اشتباه است.");
+
+        var result = await signInManager.PasswordSignInAsync(
+            user,
+            input.Password,
+            input.RememberMe,
+            lockoutOnFailure: true);
+
+        if (result.IsLockedOut)
+            throw new BusinessException("حساب کاربری به دلیل تلاش‌های ناموفق موقتاً قفل شده است.");
+
+        if (!result.Succeeded)
+            throw new BusinessException("ایمیل یا رمز عبور اشتباه است.");
+
+        return true;
+    }
+}
+
+=== FILE: src/AppServices/Admin/Auth/LoginAdminCommandValidator.cs ===
+using FluentValidation;
+
+namespace AppServices.Admin.Auth;
+
+public class LoginAdminCommandValidator : AbstractValidator<LoginAdminCommand>
+{
+    public LoginAdminCommandValidator()
+    {
+        RuleFor(x => x.Email).NotEmpty().EmailAddress();
+        RuleFor(x => x.Password).NotEmpty();
+        RuleFor(x => x.CaptchaId).NotEmpty();
+        RuleFor(x => x.CaptchaAnswer).NotEmpty();
+    }
+}
+
+=== FILE: src/AppServices/Admin/Categories/Create/CreateCategoryCommand.cs ===
+using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
+
+public class CreateCategoryCommand : ICommand<int>
 {
     [Required(ErrorMessage = "عنوان اجباری است")]
     [MaxLength(100, ErrorMessage = "حداکثر 150 کاراکتر")]
@@ -152,7 +230,6 @@ public class CreateCategoryCommand
 
 
 === FILE: src/AppServices/Admin/Categories/Create/CreateCategoryCommandHandler.cs ===
-using AppServices.Base;
 using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
@@ -166,7 +243,7 @@ public class CreateCategoryCommandHandler(IValidator<CreateCategoryCommand> vali
     ICategoryRepository categoryRepository, IUnitOfWork unitOfWork) : ICommandHandler<CreateCategoryCommand, int>
 {
 
-    public async Task<int> Invoke(CreateCategoryCommand input, CancellationToken cancellationToken)
+    public async Task<int> Handle(CreateCategoryCommand input, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
 
@@ -224,7 +301,7 @@ public class CreateCategoryCommandValidator : AbstractValidator<CreateCategoryCo
 === FILE: src/AppServices/Admin/Categories/Delete/DeleteCategoryCommand.cs ===
 using System.ComponentModel.DataAnnotations;
 
-public class DeleteCategoryCommand
+public class DeleteCategoryCommand : ICommand<int>
 {
     [Required(ErrorMessage = "شناسه اجباری است")]
     public int Id { get; set; }
@@ -233,7 +310,6 @@ public class DeleteCategoryCommand
 
 
 === FILE: src/AppServices/Admin/Categories/Delete/DeleteCategoryCommandHandler.cs ===
-using AppServices.Base;
 using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
@@ -241,7 +317,7 @@ using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Posts;
 using PersonalBlog.Domain.Exceptions;
 
-namespace AppServices.Admin.Categories.Create;
+namespace AppServices.Admin.Categories.Delete;
 
 public class DeleteCategoryCommandHandler(IValidator<DeleteCategoryCommand> validator,
     ILocalCacheManager localCacheManager,
@@ -249,7 +325,7 @@ public class DeleteCategoryCommandHandler(IValidator<DeleteCategoryCommand> vali
     ICategoryRepository categoryRepository, IUnitOfWork unitOfWork) : ICommandHandler<DeleteCategoryCommand, int>
 {
 
-    public async Task<int> Invoke(DeleteCategoryCommand request, CancellationToken cancellationToken)
+    public async Task<int> Handle(DeleteCategoryCommand request, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(request);
 
@@ -290,11 +366,12 @@ public class DeleteCategoryCommandValidator : AbstractValidator<DeleteCategoryCo
 }
 
 === FILE: src/AppServices/Admin/Categories/Grid/GetCategoryListAsGridQuery.cs ===
-using PersonalBlog.Utilities.Dtos;
+using PersonalBlog.Domain.Entities.Categories.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Categories.Grid;
 
-public class GetCategoryListAsGridQuery : GridDataSourceRequest
+public class GetCategoryListAsGridQuery : GridDataSourceRequest, IQuery<GridDataSourceResult<CategoryGridDto>>
 {
 }
 
@@ -302,17 +379,17 @@ public class GetCategoryListAsGridQuery : GridDataSourceRequest
 === FILE: src/AppServices/Admin/Categories/Grid/GetCategoryListAsGridQueryHandler.cs ===
 using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Categories.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Categories.Grid;
 
-public class GetCategoryListAsGridQueryHandler(ICategoryRepository categoryRepository) : IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<CategoryGridDto>>
+public class GetCategoryListAsGridQueryHandler(ICategoryRepository categoryRepository)
+    : IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<CategoryGridDto>>
 {
-    public async Task<GridDataSourceResult<CategoryGridDto>> Invoke(GetCategoryListAsGridQuery input,
+    public async Task<GridDataSourceResult<CategoryGridDto>> Handle(GetCategoryListAsGridQuery input,
         CancellationToken cancellationToken)
     {
-        GridDataSourceResult<CategoryGridDto> gridResult =
-            await categoryRepository.GetCategoryGridAsync(input, cancellationToken);
+        GridDataSourceResult<CategoryGridDto> gridResult = await categoryRepository.GetCategoryGridAsync(input, cancellationToken);
 
         return gridResult;
     }
@@ -320,9 +397,11 @@ public class GetCategoryListAsGridQueryHandler(ICategoryRepository categoryRepos
 
 
 === FILE: src/AppServices/Admin/Categories/Read/GetCategoryQuery.cs ===
+using PersonalBlog.Domain.Entities.Categories.Dtos;
+
 namespace AppServices.Admin.Categories.Read
 {
-    public class GetCategoryQuery
+    public class GetCategoryQuery : IQuery<CategoryDot>
     {
         public int Id { get; set; }
     }
@@ -338,7 +417,7 @@ namespace AppServices.Admin.Categories.Read;
 
 public class GetCategoryQueryHandler(ICategoryRepository categoryRepository) : IQueryHandler<GetCategoryQuery, CategoryDot>
 {
-    public async Task<CategoryDot> Invoke(GetCategoryQuery request, CancellationToken cancellationToken)
+    public async Task<CategoryDot> Handle(GetCategoryQuery request, CancellationToken cancellationToken)
     {
         CategoryDot? record = await categoryRepository.GetCategoryInfoByIdAsync(request.Id, cancellationToken)
             ?? throw new BusinessException("رکوردی با این شناسه یافت نشد");
@@ -348,10 +427,10 @@ public class GetCategoryQueryHandler(ICategoryRepository categoryRepository) : I
 }
 
 === FILE: src/AppServices/Admin/Categories/Update/UpdateCategoryCommand.cs ===
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
 
-public class UpdateCategoryCommand
+public class UpdateCategoryCommand : ICommand<int>
 {
     [Required(ErrorMessage = "شناسه اجباری است")]
     public int Id { get; set; }
@@ -382,21 +461,21 @@ public class UpdateCategoryCommand
 
 
 === FILE: src/AppServices/Admin/Categories/Update/UpdateCategoryCommandHandler.cs ===
-using AppServices.Base;
 using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Exceptions;
 
-namespace AppServices.Admin.Categories.Create;
+namespace AppServices.Admin.Categories.Update;
 
 public class UpdateCategoryCommandHandler(IValidator<UpdateCategoryCommand> validator,
     ILocalCacheManager localCacheManager,
-    ICategoryRepository categoryRepository, IUnitOfWork unitOfWork) : ICommandHandler<UpdateCategoryCommand, int>
+    ICategoryRepository categoryRepository,
+    IUnitOfWork unitOfWork) : ICommandHandler<UpdateCategoryCommand, int>
 {
 
-    public async Task<int> Invoke(UpdateCategoryCommand input, CancellationToken cancellationToken)
+    public async Task<int> Handle(UpdateCategoryCommand input, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
 
@@ -453,7 +532,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AppServices.Admin.CoursePosts.Create;
 
-public class AddPostToCourseCommand
+public class AddPostToCourseCommand : ICommand<int>
 {
     [Required]
     public int CourseId { get; set; }
@@ -492,7 +571,7 @@ public class AddPostToCourseCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<AddPostToCourseCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         AddPostToCourseCommand input,
         CancellationToken cancellationToken)
     {
@@ -586,7 +665,7 @@ public class AddPostToCourseCommandValidator
 === FILE: src/AppServices/Admin/CoursePosts/Delete/RemovePostFromCourseCommand.cs ===
 namespace AppServices.Admin.CoursePosts.Delete
 {
-    public class RemovePostFromCourseCommand
+    public class RemovePostFromCourseCommand : ICommand<int>
     {
         public int Id { get; set; }
     }
@@ -607,7 +686,7 @@ public class RemovePostFromCourseCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<RemovePostFromCourseCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         RemovePostFromCourseCommand input,
         CancellationToken cancellationToken)
     {
@@ -646,11 +725,12 @@ public class RemovePostFromCourseCommandValidator : AbstractValidator<RemovePost
 }
 
 === FILE: src/AppServices/Admin/CoursePosts/Grid/GetCoursePostsGridQuery.cs ===
-using PersonalBlog.Utilities.Dtos;
+using PersonalBlog.Domain.Entities.Courses.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.CoursePosts.Grid;
 
-public class GetCoursePostsGridQuery : GridDataSourceRequest
+public class GetCoursePostsGridQuery : GridDataSourceRequest, IQuery<GridDataSourceResult<CoursePostGridDto>>
 {
     public int CourseId { get; set; }
 }
@@ -658,17 +738,16 @@ public class GetCoursePostsGridQuery : GridDataSourceRequest
 === FILE: src/AppServices/Admin/CoursePosts/Grid/GetCoursePostsGridQueryHandler.cs ===
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Courses.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.CoursePosts.Grid;
 
-public class GetCoursePostsGridQueryHandler(
-    ICoursePostRepository coursePostRepository)
+public class GetCoursePostsGridQueryHandler(ICoursePostRepository coursePostRepository)
     : IQueryHandler<
         GetCoursePostsGridQuery,
         GridDataSourceResult<CoursePostGridDto>>
 {
-    public async Task<GridDataSourceResult<CoursePostGridDto>> Invoke(
+    public async Task<GridDataSourceResult<CoursePostGridDto>> Handle(
         GetCoursePostsGridQuery input,
         CancellationToken cancellationToken)
     {
@@ -684,7 +763,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AppServices.Admin.CoursePosts.Update
 {
-    public class UpdateCoursePostCommand
+    public class UpdateCoursePostCommand : ICommand<int>
     {
         [Required]
         public int Id { get; set; }
@@ -725,7 +804,7 @@ public class UpdateCoursePostCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<UpdateCoursePostCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         UpdateCoursePostCommand input,
         CancellationToken cancellationToken)
     {
@@ -784,12 +863,12 @@ public class UpdateCoursePostCommandValidator
 }
 
 === FILE: src/AppServices/Admin/Courses/Create/CreateCourseCommand.cs ===
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
 
 namespace AppServices.Admin.Courses.Create;
 
-public class CreateCourseCommand
+public class CreateCourseCommand : ICommand<int>
 {
     [Required]
     [MaxLength(200)]
@@ -838,7 +917,7 @@ public class CreateCourseCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<CreateCourseCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         CreateCourseCommand input,
         CancellationToken cancellationToken)
     {
@@ -919,7 +998,7 @@ public class CreateCourseCommandValidator : AbstractValidator<CreateCourseComman
 === FILE: src/AppServices/Admin/Courses/Delete/DeleteCourseCommand.cs ===
 namespace AppServices.Admin.Courses.Delete;
 
-public class DeleteCourseCommand
+public class DeleteCourseCommand : ICommand<int>
 {
     public int Id { get; set; }
 }
@@ -938,7 +1017,7 @@ public class DeleteCourseCommandHandler(IValidator<DeleteCourseCommand> validato
     ILocalCacheManager localCacheManager, ICourseRepository courseRepository, IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteCourseCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         DeleteCourseCommand input,
         CancellationToken cancellationToken)
     {
@@ -987,36 +1066,37 @@ public class DeleteCourseCommandValidator : AbstractValidator<DeleteCourseComman
 }
 
 === FILE: src/AppServices/Admin/Courses/Grid/GetCourseListAsGridQuery.cs ===
-using PersonalBlog.Utilities.Dtos;
+using PersonalBlog.Domain.Entities.Courses.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Courses.Grid;
 
-public class GetCourseListAsGridQuery : GridDataSourceRequest
+public class GetCourseListAsGridQuery : GridDataSourceRequest, IQuery<GridDataSourceResult<CourseGridDto>>
 {
 }
 
 === FILE: src/AppServices/Admin/Courses/Grid/GetCourseListAsGridQueryHandler.cs ===
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Courses.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Courses.Grid;
 
 public class GetCourseListAsGridQueryHandler(ICourseRepository courseRepository) : IQueryHandler<GetCourseListAsGridQuery, GridDataSourceResult<CourseGridDto>>
 {
-    public async Task<GridDataSourceResult<CourseGridDto>> Invoke(GetCourseListAsGridQuery input, CancellationToken cancellationToken)
+    public async Task<GridDataSourceResult<CourseGridDto>> Handle(GetCourseListAsGridQuery input, CancellationToken cancellationToken)
     {
         return await courseRepository.GetGridAsync(input, cancellationToken);
     }
 }
 
 === FILE: src/AppServices/Admin/Courses/Update/UpdateCourseCommand.cs ===
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
 
 namespace AppServices.Admin.Courses.Update;
 
-public class UpdateCourseCommand
+public class UpdateCourseCommand : ICommand<int>
 {
     [Required]
     public int Id { get; set; }
@@ -1068,7 +1148,7 @@ public class UpdateCourseCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<UpdateCourseCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         UpdateCourseCommand input,
         CancellationToken cancellationToken)
     {
@@ -1156,10 +1236,13 @@ public class UpdateCourseCommandValidator
 
 === FILE: src/AppServices/Admin/Lookups/GetCategoriesLookupQuery.cs ===
 global using AppServices.Base;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Lookups;
 
-public class GetCategoriesLookupQuery { }
+public class GetCategoriesLookupQuery : IQuery<List<IdTitleDto<int>>>
+{
+}
 
 
 === FILE: src/AppServices/Admin/Lookups/GetCategoriesLookupQueryHandler.cs ===
@@ -1170,7 +1253,7 @@ namespace AppServices.Admin.Lookups;
 
 public class GetCategoriesLookupQueryHandler(ICategoryRepository repo) : IQueryHandler<GetCategoriesLookupQuery, List<IdTitleDto<int>>>
 {
-    public async Task<List<IdTitleDto<int>>> Invoke(GetCategoriesLookupQuery input, CancellationToken cancellationToken)
+    public async Task<List<IdTitleDto<int>>> Handle(GetCategoriesLookupQuery input, CancellationToken cancellationToken)
     {
         return await repo.GetListForLookupAsync(cancellationToken);
     }
@@ -1178,24 +1261,32 @@ public class GetCategoriesLookupQueryHandler(ICategoryRepository repo) : IQueryH
 
 
 === FILE: src/AppServices/Admin/Lookups/GetPostsForCourseLookupQuery.cs ===
-namespace AppServices.Admin.CoursePosts.Lookup;
+namespace AppServices.Admin.Lookups;
 
 public class GetPostsForCourseLookupQuery
 {
 }
 
 === FILE: src/AppServices/Admin/Lookups/GetTagsLookupQuery.cs ===
+using Utilities.Dtos;
+
+namespace AppServices.Admin.Lookups;
+
+public class GetTagsLookupQuery : IQuery<List<IdTitleDto<int>>>
+{
+
+}
+
+
+=== FILE: src/AppServices/Admin/Lookups/GetTagsLookupQueryHandler.cs ===
 using PersonalBlog.Domain.Entities.Tags;
 using Utilities.Dtos;
 
 namespace AppServices.Admin.Lookups;
 
-public class GetTagsLookupQuery { }
-
-
 public class GetTagsLookupQueryHandler(ITagRepository repo) : AppServices.Base.IQueryHandler<GetTagsLookupQuery, List<IdTitleDto<int>>>
 {
-    public async Task<List<IdTitleDto<int>>> Invoke(GetTagsLookupQuery input, CancellationToken cancellationToken)
+    public async Task<List<IdTitleDto<int>>> Handle(GetTagsLookupQuery input, CancellationToken cancellationToken)
     {
         return await repo.GetListForLookupAsync(cancellationToken);
     }
@@ -1203,12 +1294,12 @@ public class GetTagsLookupQueryHandler(ITagRepository repo) : AppServices.Base.I
 
 
 === FILE: src/AppServices/Admin/Posts/Create/CreatePostCommand.cs ===
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
 
 namespace AppServices.Admin.Posts.Create;
 
-public class CreatePostCommand
+public class CreatePostCommand : ICommand<int>
 {
     [Required(ErrorMessage = "عنوان اجباری است")]
     [MaxLength(250, ErrorMessage = "حداکثر 250 کاراکتر")]
@@ -1272,7 +1363,7 @@ public class CreatePostCommandHandler(
     IHtmlSanitizerService htmlSanitizerService,
     IUnitOfWork unitOfWork) : ICommandHandler<CreatePostCommand, int>
 {
-    public async Task<int> Invoke(CreatePostCommand input, CancellationToken cancellationToken)
+    public async Task<int> Handle(CreatePostCommand input, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
         if (!validationResult.IsValid)
@@ -1343,7 +1434,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AppServices.Admin.Posts.Delete;
 
-public class DeletePostCommand
+public class DeletePostCommand : ICommand<int>
 {
     [Required]
     public int Id { get; set; }
@@ -1351,7 +1442,6 @@ public class DeletePostCommand
 
 
 === FILE: src/AppServices/Admin/Posts/Delete/DeletePostCommandHandler.cs ===
-using AppServices.Base;
 using FluentValidation;
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Constants;
@@ -1360,13 +1450,10 @@ using PersonalBlog.Domain.Exceptions;
 
 namespace AppServices.Admin.Posts.Delete;
 
-public class DeletePostCommandHandler(
-    IValidator<DeletePostCommand> validator,
-    ILocalCacheManager localCacheManager,
-    IPostRepository postRepository,
-    IUnitOfWork unitOfWork) : ICommandHandler<DeletePostCommand, int>
+public class DeletePostCommandHandler(IValidator<DeletePostCommand> validator,
+    ILocalCacheManager localCacheManager, IPostRepository postRepository, IUnitOfWork unitOfWork) : ICommandHandler<DeletePostCommand, int>
 {
-    public async Task<int> Invoke(DeletePostCommand request, CancellationToken cancellationToken)
+    public async Task<int> Handle(DeletePostCommand request, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(request);
         if (!validationResult.IsValid)
@@ -1405,11 +1492,12 @@ public class DeletePostCommandValidator : AbstractValidator<DeletePostCommand>
 
 
 === FILE: src/AppServices/Admin/Posts/Grid/GetPostListAsGridQuery.cs ===
-using PersonalBlog.Utilities.Dtos;
+using PersonalBlog.Domain.Entities.Posts.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Posts.Grid;
 
-public class GetPostListAsGridQuery : GridDataSourceRequest
+public class GetPostListAsGridQuery : GridDataSourceRequest, IQuery<GridDataSourceResult<PostGridDto>>
 {
 }
 
@@ -1417,13 +1505,13 @@ public class GetPostListAsGridQuery : GridDataSourceRequest
 === FILE: src/AppServices/Admin/Posts/Grid/GetPostListAsGridQueryHandler.cs ===
 using PersonalBlog.Domain.Entities.Posts;
 using PersonalBlog.Domain.Entities.Posts.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Posts.Grid;
 
 public class GetPostListAsGridQueryHandler(IPostRepository postRepository) : IQueryHandler<GetPostListAsGridQuery, GridDataSourceResult<PostGridDto>>
 {
-    public async Task<GridDataSourceResult<PostGridDto>> Invoke(GetPostListAsGridQuery input, CancellationToken cancellationToken)
+    public async Task<GridDataSourceResult<PostGridDto>> Handle(GetPostListAsGridQuery input, CancellationToken cancellationToken)
     {
         GridDataSourceResult<PostGridDto> gridResult = await postRepository.GetGridAsync(input, cancellationToken);
 
@@ -1433,9 +1521,11 @@ public class GetPostListAsGridQueryHandler(IPostRepository postRepository) : IQu
 
 
 === FILE: src/AppServices/Admin/Posts/Read/GetPostQuery.cs ===
+using PersonalBlog.Domain.Entities.Posts.Dtos;
+
 namespace AppServices.Admin.Posts.Read;
 
-public class GetPostQuery
+public class GetPostQuery : IQuery<PostDto>
 {
     public int Id { get; set; }
 }
@@ -1451,7 +1541,7 @@ namespace AppServices.Admin.Posts.Read;
 public class GetPostQueryHandler(IPostRepository postRepository)
     : IQueryHandler<GetPostQuery, PostDto>
 {
-    public async Task<PostDto> Invoke(GetPostQuery request, CancellationToken cancellationToken)
+    public async Task<PostDto> Handle(GetPostQuery request, CancellationToken cancellationToken)
     {
         var record = await postRepository.GetInfoByIdAsync(request.Id, cancellationToken)
             ?? throw new BusinessException("پست با این شناسه یافت نشد.");
@@ -1462,12 +1552,12 @@ public class GetPostQueryHandler(IPostRepository postRepository)
 
 
 === FILE: src/AppServices/Admin/Posts/Update/UpdatePostCommand.cs ===
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
 
 namespace AppServices.Admin.Posts.Update;
 
-public class UpdatePostCommand
+public class UpdatePostCommand : ICommand<int>
 {
     [Required]
     public int Id { get; set; }
@@ -1533,7 +1623,7 @@ public class UpdatePostCommandHandler(
     IHtmlSanitizerService htmlSanitizerService,
     IUnitOfWork unitOfWork) : ICommandHandler<UpdatePostCommand, int>
 {
-    public async Task<int> Invoke(UpdatePostCommand input, CancellationToken cancellationToken)
+    public async Task<int> Handle(UpdatePostCommand input, CancellationToken cancellationToken)
     {
         var validationResult = validator.Validate(input);
         if (!validationResult.IsValid)
@@ -1610,12 +1700,12 @@ public class UpdatePostCommandValidator : AbstractValidator<UpdatePostCommand>
 
 
 === FILE: src/AppServices/Admin/Tags/Create/CreateTagCommand.cs ===
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
 
 namespace AppServices.Admin.Tags.Create;
 
-public class CreateTagCommand
+public class CreateTagCommand : ICommand<int>
 {
     [Required(ErrorMessage = "عنوان اجباری است")]
     [MaxLength(100)]
@@ -1645,7 +1735,7 @@ public class CreateTagCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<CreateTagCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         CreateTagCommand input,
         CancellationToken cancellationToken)
     {
@@ -1699,7 +1789,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AppServices.Admin.Tags.Delete;
 
-public class DeleteTagCommand
+public class DeleteTagCommand : ICommand<int>
 {
     [Required(ErrorMessage = "شناسه اجباری است")]
     public int Id { get; set; }
@@ -1721,7 +1811,7 @@ public class DeleteTagCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteTagCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         DeleteTagCommand input,
         CancellationToken cancellationToken)
     {
@@ -1771,18 +1861,19 @@ public class DeleteTagCommandValidator
 }
 
 === FILE: src/AppServices/Admin/Tags/Grid/GetTagListAsGridQuery.cs ===
-using PersonalBlog.Utilities.Dtos;
+using PersonalBlog.Domain.Entities.Tags.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Tags.Grid;
 
-public class GetTagListAsGridQuery : GridDataSourceRequest
+public class GetTagListAsGridQuery : GridDataSourceRequest, IQuery<GridDataSourceResult<TagGridDto>>
 {
 }
 
 === FILE: src/AppServices/Admin/Tags/Grid/GetTagListAsGridQueryHandler.cs ===
 using PersonalBlog.Domain.Entities.Tags;
 using PersonalBlog.Domain.Entities.Tags.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace AppServices.Admin.Tags.Grid;
 
@@ -1792,7 +1883,7 @@ public class GetTagListAsGridQueryHandler(
         GetTagListAsGridQuery,
         GridDataSourceResult<TagGridDto>>
 {
-    public async Task<GridDataSourceResult<TagGridDto>> Invoke(
+    public async Task<GridDataSourceResult<TagGridDto>> Handle(
         GetTagListAsGridQuery input,
         CancellationToken cancellationToken)
     {
@@ -1803,12 +1894,12 @@ public class GetTagListAsGridQueryHandler(
 }
 
 === FILE: src/AppServices/Admin/Tags/Update/UpdateTagCommand.cs ===
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel.DataAnnotations;
+using Utilities.Extensions;
 
 namespace AppServices.Admin.Tags.Update;
 
-public class UpdateTagCommand
+public class UpdateTagCommand : ICommand<int>
 {
     [Required(ErrorMessage = "شناسه اجباری است")]
     public int Id { get; set; }
@@ -1841,7 +1932,7 @@ public class UpdateTagCommandHandler(
     IUnitOfWork unitOfWork)
     : ICommandHandler<UpdateTagCommand, int>
 {
-    public async Task<int> Invoke(
+    public async Task<int> Handle(
         UpdateTagCommand input,
         CancellationToken cancellationToken)
     {
@@ -1909,7 +2000,6 @@ public class UpdateTagCommandValidator
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Admin\Tags\Read\" />
     <Folder Include="Site\Categories\" />
   </ItemGroup>
 
@@ -1927,25 +2017,35 @@ public class UpdateTagCommandValidator
 </Project>
 
 
-=== FILE: src/AppServices/Base/ICommandHandler.cs ===
-namespace AppServices.Base
+=== FILE: src/AppServices/Base/ICommand.cs ===
+namespace AppServices.Base;
+
+public interface ICommand
+{ }
+
+public interface ICommand<TResult>
+{ }
+
+public interface ICommandHandler<in TCommand> where TCommand : ICommand
 {
-    public interface ICommandHandler<CommandAbstract, TResult>
-    {
-        Task<TResult> Invoke(CommandAbstract request, CancellationToken cancellationToken);
-    }
+    Task Handle(TCommand command, CancellationToken cancellationToken);
 }
 
-
-=== FILE: src/AppServices/Base/IQueryHandler.cs ===
-namespace AppServices.Base
+public interface ICommandHandler<in TCommand, TResult> where TCommand : ICommand<TResult>
 {
-    public interface IQueryHandler<TQuery, TResult>
-    {
-        Task<TResult> Invoke(TQuery input, CancellationToken cancellationToken);
-    }
+    Task<TResult> Handle(TCommand command, CancellationToken cancellationToken);
 }
 
+=== FILE: src/AppServices/Base/IQuery.cs ===
+namespace AppServices.Base;
+
+public interface IQuery<TResult>
+{ }
+
+public interface IQueryHandler<in TQuery, TResult> where TQuery : IQuery<TResult>
+{
+    Task<TResult> Handle(TQuery query, CancellationToken cancellationToken);
+}
 
 === FILE: src/AppServices/Commons/HtmlSanitizerService.cs ===
 using Ganss.Xss;
@@ -1976,6 +2076,16 @@ public sealed class HtmlSanitizerService : IHtmlSanitizerService
     }
 }
 
+=== FILE: src/AppServices/Commons/ICapthcaService.cs ===
+namespace AppServices.Commons;
+
+public interface ICaptchaService
+{
+    Task<(string CaptchaId, string Question)> GenerateChallengeAsync(CancellationToken cancellationToken);
+    Task<bool> ValidateAsync(string captchaId, string answer, CancellationToken cancellationToken);
+}
+
+
 === FILE: src/AppServices/Commons/IHtmlSanitizerService.cs ===
 namespace AppServices.Commons;
 
@@ -1985,12 +2095,67 @@ public interface IHtmlSanitizerService
 }
 
 
+=== FILE: src/AppServices/Commons/MathCaptchaService.cs ===
+using Microsoft.Extensions.Caching.Memory;
+
+namespace AppServices.Commons;
+
+/// <summary>
+/// کپچای ریاضی ساده با ذخیره در کش سرور.
+/// در صورت نیاز به reCAPTCHA گوگل، این کلاس را با RecaptchaService جایگزین کنید.
+/// </summary>
+public class MathCaptchaService(IMemoryCache cache) : ICaptchaService
+{
+    public Task<(string CaptchaId, string Question)> GenerateChallengeAsync(CancellationToken cancellationToken)
+    {
+        var random = new Random();
+        var a = random.Next(1, 20);
+        var b = random.Next(1, 20);
+        var useMinus = random.Next(2) == 1;
+
+        int answer;
+        string question;
+
+        if (useMinus)
+        {
+            if (a < b) (a, b) = (b, a);
+            answer = a - b;
+            question = $"{a} − {b} = ?";
+        }
+        else
+        {
+            answer = a + b;
+            question = $"{a} + {b} = ?";
+        }
+
+        var captchaId = Guid.NewGuid().ToString("N");
+        cache.Set($"captcha:{captchaId}", answer, TimeSpan.FromMinutes(3));
+
+        return Task.FromResult((captchaId, question));
+    }
+
+    public Task<bool> ValidateAsync(string captchaId, string answer, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(captchaId) || string.IsNullOrWhiteSpace(answer))
+            return Task.FromResult(false);
+
+        var key = $"captcha:{captchaId}";
+        if (!cache.TryGetValue(key, out int expected))
+            return Task.FromResult(false);
+
+        cache.Remove(key); // یک‌بار مصرف
+
+        var isValid = int.TryParse(answer.Trim(), out var userAnswer) && userAnswer == expected;
+        return Task.FromResult(isValid);
+    }
+}
+
 === FILE: src/AppServices/DependencyInjectionExtensions.cs ===
 using AppServices.Commons;
+using AppServices.Options;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using PersonalBlog.AppServices.Options;
 
 namespace AppServices
 {
@@ -1998,6 +2163,9 @@ namespace AppServices
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
         {
+            // Context
+            services.AddHttpContextAccessor();
+
             // Options
             services.Configure<RecaptchaSettings>(configuration.GetSection("RecaptchaSettings"));
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
@@ -2005,49 +2173,56 @@ namespace AppServices
             services.Configure<CacheSettings>(configuration.GetSection("CacheSettings"));
 
             services.AddTransient<IHtmlSanitizerService, HtmlSanitizerService>();
+            services.AddScoped<ICaptchaService, MathCaptchaService>();
             services.AddValidatorsFromAssemblyContaining<CreateCategoryCommandValidator>();
 
-            services.Scan(scan => scan
-                .FromApplicationDependencies()
-                .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<,>)))
-                .AddClasses(classes => classes.AssignableTo(typeof(IQueryHandler<,>)))
-                .AsImplementedInterfaces()
-                .WithScopedLifetime() // WithTransientLifetime
-            );
+            //services.Scan(scan => scan
+            //    .FromAssemblies(
+            //        typeof(DeletePostCommandHandler).Assembly,   // AppServices
+            //        typeof(CreateCategoryCommandValidator).Assembly,
+            //        typeof(DeletePostCommand).Assembly
 
-            // Context
-            services.AddHttpContextAccessor();
-            //services.AddScoped<ICurrentAppUser, CurrentAppUser>();
+            //    // add other assemblies you actually want scanned
+            //    )
+            //    .AddClasses(c => c.AssignableTo(typeof(ICommandHandler<,>)))
+            //    .AddClasses(c => c.AssignableTo(typeof(IQueryHandler<,>)))
+            //    .AsImplementedInterfaces()
+            //    .WithScopedLifetime());
 
-            // Common Services
-            //services.AddHttpClient("recaptcha");
-            //services.AddScoped<ICaptchaService, RecaptchaService>();
-            //services.AddScoped<IVisitService, VisitService>();
-            //services.AddScoped<ISearchService, SearchService>();
-            //services.AddScoped<IExceptionLogService, ExceptionLogService>();
-            //services.AddScoped<IEmailService, EmailService>();
 
-            // Blog Services
-            //services.AddScoped<ICategoryService, CategoryService>();
-            //services.AddScoped<ITagService, TagService>();
-            //services.AddScoped<IPostService, PostService>();
-            //services.AddScoped<ICommentService, CommentService>();
-            //services.AddScoped<ICourseService, CourseService>();
-            //services.AddScoped<IProjectService, ProjectService>();
-            //services.AddScoped<IContactMessageService, ContactMessageService>();
-            //services.AddScoped<ISubscriptionService, SubscriptionService>();
+            services.AddCommandsAndQueries();
 
-            // Validators
-            //services.AddValidatorsFromAssemblyContaining<DependencyInjectionExtensions>();
 
             return services;
+        }
+
+        private static void AddCommandsAndQueries(this IServiceCollection services)
+        {
+            services.Scan(scan => scan.FromAssemblies(typeof(DependencyInjectionExtensions).Assembly)
+
+                .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<,>)))
+                .AsImplementedInterfaces()
+                .WithScopedLifetime()
+
+                // ۲. ثبت هندلرهای Command که مقداری برنمی‌گردانند (ICommandHandler<TCommand>)
+                .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<>)))
+                .AsImplementedInterfaces()
+                .WithScopedLifetime()
+
+                // ۳. ثبت هندلرهای Query (IQueryHandler<TQuery, TResult>)
+                .AddClasses(classes => classes.AssignableTo(typeof(IQueryHandler<,>)))
+                .AsImplementedInterfaces()
+                .WithScopedLifetime()
+            );
+
+            services.AddValidatorsFromAssemblyContaining<CreateCategoryCommandValidator>();
         }
     }
 }
 
 
 === FILE: src/AppServices/Dtos/CategoryDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 // --- Categories ---
 public class CategoryDto { 
@@ -2060,20 +2235,20 @@ public class CategoryDto {
 
 
 === FILE: src/AppServices/Dtos/CommentDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 // --- Comments & Messages ---
 public class CommentDto { public long Id { get; set; } public string DisplayName { get; set; } = default!; public string Content { get; set; } = default!; public DateTime CreatedAt { get; set; } public bool IsApproved { get; set; } public List<CommentDto> Replies { get; set; } = new(); }
 
 
 === FILE: src/AppServices/Dtos/ContactMessageDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class ContactMessageDto { public long Id { get; set; } public string FullName { get; set; } = default!; public string Email { get; set; } = default!; public string Subject { get; set; } = default!; public string Body { get; set; } = default!; public bool IsRead { get; set; } public DateTime CreatedAt { get; set; } }
 
 
 === FILE: src/AppServices/Dtos/CourseDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 // --- Courses ---
 public class CourseDto { 
@@ -2088,7 +2263,7 @@ public class CourseDto {
 
 
 === FILE: src/AppServices/Dtos/CreateCategoryInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class CreateCategoryInputDto
 {
@@ -2099,25 +2274,25 @@ public class CreateCategoryInputDto
 
 
 === FILE: src/AppServices/Dtos/CreateCommentInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class CreateCommentInputDto { public long PostId { get; set; } public long? ParentCommentId { get; set; } public string DisplayName { get; set; } = default!; public string Email { get; set; } = default!; public string Content { get; set; } = default!; public string RecaptchaToken { get; set; } = default!; }
 
 
 === FILE: src/AppServices/Dtos/CreateContactMessageInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class CreateContactMessageInputDto { public string FullName { get; set; } = default!; public string Email { get; set; } = default!; public string Subject { get; set; } = default!; public string Body { get; set; } = default!; public string RecaptchaToken { get; set; } = default!; }
 
 
 === FILE: src/AppServices/Dtos/CreateCourseInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class CreateCourseInputDto { public string Title { get; set; } = default!; public string Slug { get; set; } = default!; public string? Description { get; set; } public string? CoverImageUrl { get; set; } public bool IsPublished { get; set; } = true; }
 
 
 === FILE: src/AppServices/Dtos/CreatePostInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class CreatePostInputDto
 {
@@ -2138,7 +2313,7 @@ public class CreatePostInputDto
 
 
 === FILE: src/AppServices/Dtos/CreateProjectInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class CreateProjectInputDto
 {
@@ -2155,7 +2330,7 @@ public class CreateProjectInputDto
 
 
 === FILE: src/AppServices/Dtos/CreateSubscriptionInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class CreateSubscriptionInputDto
 {
@@ -2164,7 +2339,7 @@ public class CreateSubscriptionInputDto
 
 
 === FILE: src/AppServices/Dtos/PopularPostDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class PopularPostDto
 {
@@ -2175,46 +2350,46 @@ public class PopularPostDto
 }
 
 === FILE: src/AppServices/Dtos/PostDetailDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class PostDetailDto : PostListItemDto { public string Content { get; set; } = default!; public long CategoryId { get; set; } public long? CourseId { get; set; } public string? CourseTitle { get; set; } public string? MetaTitle { get; set; } public string? MetaDescription { get; set; } public string? OgImageUrl { get; set; } public List<CommentDto> Comments { get; set; } = new(); }
 
 
 === FILE: src/AppServices/Dtos/PostListFilterDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class PostListFilterDto { public int Page { get; set; } = 1; public int PageSize { get; set; } = 12; public long? CategoryId { get; set; } public long? TagId { get; set; } public long? CourseId { get; set; } public bool OnlyPublished { get; set; } = true; }
 
 
 === FILE: src/AppServices/Dtos/PostListItemDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 // --- Posts ---
 public class PostListItemDto { public long Id { get; set; } public string Title { get; set; } = default!; public string Slug { get; set; } = default!; public string Summary { get; set; } = default!; public string? CoverImageUrl { get; set; } public bool IsPublished { get; set; } public DateTime? PublishedAt { get; set; } public int ViewCount { get; set; } public string CategoryTitle { get; set; } = default!; public List<string> Tags { get; set; } = new(); }
 
 
 === FILE: src/AppServices/Dtos/ProjectDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 // --- Projects ---
 public class ProjectDto { public long Id { get; set; } public string Title { get; set; } = default!; public string Slug { get; set; } = default!; public string Description { get; set; } = default!; public string? ImageUrl { get; set; } public string? LiveUrl { get; set; } public string? RepoUrl { get; set; } public List<string> Technologies { get; set; } = new(); public bool IsFeatured { get; set; } }
 
 
 === FILE: src/AppServices/Dtos/SearchResultDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class SearchResultDto { public long PostId { get; set; } public string Title { get; set; } = default!; public string Slug { get; set; } = default!; public string Summary { get; set; } = default!; public string CategoryTitle { get; set; } = default!; public DateTime? PublishedAt { get; set; } }
 
 
 === FILE: src/AppServices/Dtos/SubscriptionDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 // --- Subscriptions & Search ---
 public class SubscriptionDto { public long Id { get; set; } public string Email { get; set; } = default!; public bool IsActive { get; set; } public DateTime CreatedAt { get; set; } }
 
 
 === FILE: src/AppServices/Dtos/TagDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 // --- Tags ---
 public class TagDto { 
@@ -2226,7 +2401,7 @@ public class TagDto {
 
 
 === FILE: src/AppServices/Dtos/UpdateCategoryInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class UpdateCategoryInputDto : CreateCategoryInputDto { 
     public long Id { get; set; }
@@ -2234,25 +2409,25 @@ public class UpdateCategoryInputDto : CreateCategoryInputDto {
 
 
 === FILE: src/AppServices/Dtos/UpdateCourseInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class UpdateCourseInputDto : CreateCourseInputDto { public long Id { get; set; } }
 
 
 === FILE: src/AppServices/Dtos/UpdatePostInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class UpdatePostInputDto : CreatePostInputDto { public long Id { get; set; } }
 
 
 === FILE: src/AppServices/Dtos/UpdateProjectInputDto.cs ===
-namespace PersonalBlog.AppServices.Dtos;
+namespace AppServices.Dtos;
 
 public class UpdateProjectInputDto : CreateProjectInputDto { public long Id { get; set; } }
 
 
 === FILE: src/AppServices/Options/CacheSettings.cs ===
-namespace PersonalBlog.AppServices.Options;
+namespace AppServices.Options;
 
 public class CacheSettings
 {
@@ -2265,12 +2440,12 @@ namespace AppServices.Options;
 
 public class DbOptions
 {
-    public string ConnectionString { get; set; }
+    public string? ConnectionString { get; set; }
 }
 
 
 === FILE: src/AppServices/Options/EmailSettings.cs ===
-namespace PersonalBlog.AppServices.Options;
+namespace AppServices.Options;
 
 public class EmailSettings
 {
@@ -2286,7 +2461,7 @@ public class EmailSettings
 
 
 === FILE: src/AppServices/Options/RecaptchaSettings.cs ===
-namespace PersonalBlog.AppServices.Options;
+namespace AppServices.Options;
 
 public class RecaptchaSettings
 {
@@ -2297,7 +2472,7 @@ public class RecaptchaSettings
 
 
 === FILE: src/AppServices/Options/SocialLinksSettings.cs ===
-namespace PersonalBlog.AppServices.Options;
+namespace AppServices.Options;
 
 public class SocialLinksSettings
 {
@@ -2510,7 +2685,7 @@ public class SocialLinksSettings
 === FILE: src/AppServices/Site/Posts/GetLatestPostsQuery.cs ===
 namespace AppServices.Site.Posts;
 
-public class GetLatestPostsQuery
+public class GetLatestPostsQuery : IQuery<List<GetLatestPostsResult>>
 {
     public int Count { get; set; } = 10;
     public bool? IsInEnglish { get; set; }
@@ -2518,14 +2693,12 @@ public class GetLatestPostsQuery
 
 
 === FILE: src/AppServices/Site/Posts/GetLatestPostsQueryHandler.cs ===
-using PersonalBlog.Domain.Entities.Posts;
-
 namespace AppServices.Site.Posts;
 
-public class GetLatestPostsQueryHandler(IPostRepository postRepository)
+public class GetLatestPostsQueryHandler()
     : IQueryHandler<GetLatestPostsQuery, List<GetLatestPostsResult>>
 {
-    public async Task<List<GetLatestPostsResult>> Invoke(GetLatestPostsQuery input, CancellationToken cancellationToken)
+    public async Task<List<GetLatestPostsResult>> Handle(GetLatestPostsQuery input, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
         //var items = await postRepository.GetLatestPublishedAsync(input.Count, input.IsInEnglish, cancellationToken);
@@ -2564,21 +2737,19 @@ public class GetLatestPostsResult
 === FILE: src/AppServices/Site/Posts/GetPostBySlugQuery.cs ===
 namespace AppServices.Site.Posts;
 
-public class GetPostBySlugQuery
+public class GetPostBySlugQuery : IQuery<GetPostBySlugResult>
 {
     public string Slug { get; set; } = default!;
 }
 
 
 === FILE: src/AppServices/Site/Posts/GetPostBySlugQueryHandler.cs ===
-using PersonalBlog.Domain.Entities.Posts;
-
 namespace AppServices.Site.Posts;
 
-public class GetPostBySlugQueryHandler(IPostRepository postRepository)
+public class GetPostBySlugQueryHandler()
     : IQueryHandler<GetPostBySlugQuery, GetPostBySlugResult>
 {
-    public async Task<GetPostBySlugResult> Invoke(GetPostBySlugQuery input, CancellationToken cancellationToken)
+    public async Task<GetPostBySlugResult> Handle(GetPostBySlugQuery input, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
 
@@ -2787,7 +2958,6 @@ public static class CacheKeys
 
 
 === FILE: src/Domain/Entities/Categories/Category.cs ===
-using PersonalBlog.Domain.Commons.Base;
 using PersonalBlog.Domain.Entities.Posts;
 
 namespace PersonalBlog.Domain.Entities.Categories;
@@ -2809,7 +2979,7 @@ public class Category : EntityBase
     /// </summary>
     public string Slug { get; set; } = default!;
 
-    public string TinyUrl { get; private set; }
+    public string TinyUrl { get; set; }
 
     /// <summary>
     /// 2048
@@ -2859,7 +3029,7 @@ public class CategoryDot
     public string UpdatedAtPersian => UpdatedAt.ToShortPersianDateTimeString();
     public string Title { get; set; } = default!;
     public string Slug { get; set; } = default!;
-    public string TinyUrl { get; set; }
+    public string? TinyUrl { get; set; }
     public string? Description { get; set; }
     public bool IsInEnglish { get; set; }
     public int PostsCount { get; set; }
@@ -2869,7 +3039,6 @@ public class CategoryDot
 === FILE: src/Domain/Entities/Categories/ICategoryRepository.cs ===
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Entities.Categories.Dtos;
-using PersonalBlog.Utilities.Dtos;
 using Utilities.Dtos;
 
 namespace PersonalBlog.Domain.Entities.Categories;
@@ -2886,7 +3055,9 @@ public interface ICategoryRepository : IRepository<Category>
 
 
 === FILE: src/Domain/Entities/Comments/Comment.cs ===
-namespace PersonalBlog.Domain.Entities.Posts;
+using PersonalBlog.Domain.Entities.Posts;
+
+namespace PersonalBlog.Domain.Entities.Comments;
 
 public class Comment : EntityBase
 {
@@ -2953,7 +3124,6 @@ public class Course : EntityBase
 
 
 === FILE: src/Domain/Entities/Courses/CoursePost.cs ===
-using PersonalBlog.Domain.Commons.Base;
 using PersonalBlog.Domain.Entities.Posts;
 
 namespace PersonalBlog.Domain.Entities.Courses;
@@ -2967,8 +3137,8 @@ public class CoursePost : EntityBase
     public string? CoverImageUrl { get; set; }
     public bool IsPublished { get; set; } = true;
     public int OrderInCourse { get; set; }
-    public virtual Course Course { get; set; }
-    public virtual Post Post { get; set; }
+    public virtual Course? Course { get; set; }
+    public virtual Post? Post { get; set; }
 }
 
 === FILE: src/Domain/Entities/Courses/Dtos/CourseGridDto.cs ===
@@ -3032,7 +3202,7 @@ public class CoursePostGridDto
 === FILE: src/Domain/Entities/Courses/ICoursePostRepository.cs ===
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Entities.Courses.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace PersonalBlog.Domain.Entities.Courses;
 
@@ -3063,7 +3233,6 @@ public interface ICoursePostRepository : IRepository<CoursePost>
 === FILE: src/Domain/Entities/Courses/ICourseRepository.cs ===
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Entities.Courses.Dtos;
-using PersonalBlog.Utilities.Dtos;
 using Utilities.Dtos;
 
 namespace PersonalBlog.Domain.Entities.Courses;
@@ -3129,7 +3298,7 @@ public class PostDto
     public string Slug { get; set; } = default!;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public string TinyUrl { get; set; }
+    public string? TinyUrl { get; set; }
     public string Summary { get; set; } = default!;
     public string Content { get; set; } = default!;
     public string? CoverImageUrl { get; set; }
@@ -3228,7 +3397,7 @@ public class PostVisit : EntityBase
 === FILE: src/Domain/Entities/Posts/IPostRepository.cs ===
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Entities.Posts.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace PersonalBlog.Domain.Entities.Posts;
 
@@ -3244,6 +3413,7 @@ public interface IPostRepository : IRepository<Post>
 
 === FILE: src/Domain/Entities/Posts/Post.cs ===
 using PersonalBlog.Domain.Entities.Categories;
+using PersonalBlog.Domain.Entities.Comments;
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Posts.Entities;
 using PersonalBlog.Domain.Entities.Projects.Entities;
@@ -3314,8 +3484,8 @@ namespace PersonalBlog.Domain.Entities.Projects.Entities
         public string? CoverImageUrl { get; set; }
         public bool IsPublished { get; set; } = true;
         public int OrderInCourse { get; set; }
-        public virtual Project Project { get; set; }
-        public virtual Post Post { get; set; }
+        public virtual Project? Project { get; set; }
+        public virtual Post? Post { get; set; }
 
 
     }
@@ -3351,9 +3521,9 @@ public class Project : EntityBase
 
 
 === FILE: src/Domain/Entities/Slugs/Slug.cs ===
-using PersonalBlog.Utilities.Extensions;
+using Utilities.Extensions;
 
-namespace Abin.Website.Domain.Entities.SEOs;
+namespace PersonalBlog.Domain.Entities.Slugs;
 
 public class Slug : EntityBase
 {
@@ -3365,7 +3535,7 @@ public class Slug : EntityBase
     public const string Article = "article";
     public const string Author = "author";
 
-    public Slug() { }
+    private Slug() { }
 
     public static Slug CreateRedirection(string url, string redirectUrl)
     {
@@ -3389,15 +3559,15 @@ public class Slug : EntityBase
         };
     }
 
-    public static Slug SyncRedirectCreate(Slug seoUrl, string sEOUrl)
+    public static Slug SyncRedirectCreate(Slug slug, string slugUrl)
     {
         return new Slug()
         {
-            EntityId = seoUrl.EntityId,
-            EntityType = seoUrl.EntityType,
-            Url = sEOUrl.StringNormalization(toLower: true),
+            EntityId = slug.EntityId,
+            EntityType = slug.EntityType,
+            Url = slugUrl.StringNormalization(toLower: true),
             HasRedirectUrl = true,
-            RedirectUrl = seoUrl.Url,
+            RedirectUrl = slug.Url,
 
         };
     }
@@ -3405,9 +3575,9 @@ public class Slug : EntityBase
     public int EntityId { get; set; }
     public string EntityType { get; set; }
     public string Url { get; set; }
-    public string TinyUrl { get; set; }
+    public string? TinyUrl { get; set; }
     public bool HasRedirectUrl { get; set; }
-    public string RedirectUrl { get; set; }
+    public string? RedirectUrl { get; set; }
 
     public void UpdateUrl(string url)
     {
@@ -3428,9 +3598,9 @@ public class Slug : EntityBase
 }
 
 === FILE: src/Domain/Entities/Slugs/SlugTemplate.cs ===
-using PersonalBlog.Utilities.Extensions;
+using Utilities.Extensions;
 
-namespace Abin.Website.Domain.Entities.SEOs;
+namespace PersonalBlog.Domain.Entities.Slugs;
 
 public static class SlugTemplate
 {
@@ -3542,7 +3712,6 @@ public class TagGridDto
 === FILE: src/Domain/Entities/Tags/ITagRepository.cs ===
 using PersonalBlog.Domain.Commons;
 using PersonalBlog.Domain.Entities.Tags.Dtos;
-using PersonalBlog.Utilities.Dtos;
 using Utilities.Dtos;
 
 namespace PersonalBlog.Domain.Entities.Tags;
@@ -3631,14 +3800,21 @@ public class AuthorizationException : Exception
 {
   "ConnectionStrings": {
     "DatabaseConnection": "Persist Security Info=False;Data Source=.;Initial Catalog=RpBlogDb;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "AdminSeed": {
+    "Email": "admin@example.com",
+    "Password": "Admin@123456"
   }
 }
 
 === FILE: src/Infrastructure.Persistence.SqlServer.Migrator/DbMigratorHostedService.cs ===
+using Infrastructure.Persistence.SqlServer.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using PersonalBlog.Domain.Entities.Identities;
 
 namespace Infrastructure.Persistence.SqlServer.Migrator;
 
@@ -3648,47 +3824,59 @@ public class DbMigratorHostedService(IHostApplicationLifetime hostApplicationLif
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         ServiceCollection services = new ServiceCollection();
-
-        Migrate_Core_Db(services);
-
+        await Migrate_Core_Db(services);
         await Task.CompletedTask;
-
         hostApplicationLifetime.StopApplication();
     }
 
-    private void Migrate_Core_Db(ServiceCollection services)
+    private async Task Migrate_Core_Db(ServiceCollection services)
     {
         try
         {
             var connectionString = configuration.GetConnectionString("DatabaseConnection");
-
             services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(connectionString,
-                        b =>
-                        {
-                            b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
-                            b.CommandTimeout(60 * 60);
-                        })
-                    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
-                    .EnableSensitiveDataLogging()
+                    b =>
+                    {
+                        b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
+                        b.CommandTimeout(60 * 60);
+                    })
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
+                .EnableSensitiveDataLogging()
             );
 
-            using (IServiceScope scope = services.BuildServiceProvider().CreateScope())
-            {
-                AppDbContext? dbContext = scope.ServiceProvider.GetService<AppDbContext>();
 
-                if (dbContext is not null)
-                {
-                    dbContext.Database.SetCommandTimeout(60 * 60); // 60 minutes
-                    dbContext.Database.Migrate();
-                }
+            services.AddIdentityCore<AppUser>()
+                .AddRoles<AppRole>()
+                .AddEntityFrameworkStores<AppDbContext>();
+
+            services.AddLogging(builder => builder.AddConsole());
+
+            // IConfiguration برای SeedDataRunner
+            services.AddSingleton(configuration);
+
+            using IServiceScope scope = services.BuildServiceProvider().CreateScope();
+            AppDbContext? dbContext = scope.ServiceProvider.GetService<AppDbContext>();
+
+            if (dbContext is not null)
+            {
+                dbContext.Database.SetCommandTimeout(60 * 60);
+                dbContext.Database.Migrate();
+                Console.WriteLine(" Migration is done");
             }
+
+            //  اجرای Seed دیتای اولیه
+            Console.WriteLine("Start Seeding ... ");
+            await SeedDataRunner.RunAsync(scope.ServiceProvider);
+            Console.WriteLine("The seed operation is complete.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Exception:");
+            Console.WriteLine($"Error: ");
             Console.WriteLine(ex.ExceptionToString());
         }
+
+        Console.ReadKey();
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
@@ -3765,6 +3953,7 @@ internal static class ExceptionExtensions
 === FILE: src/Infrastructure.Persistence.SqlServer/AppDbContext.cs ===
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using PersonalBlog.Domain.Entities.Categories;
+using PersonalBlog.Domain.Entities.Comments;
 using PersonalBlog.Domain.Entities.ContactMessages;
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Posts;
@@ -3948,7 +4137,6 @@ public class AppExceptionLogConfiguration : IEntityTypeConfiguration<AppExceptio
 
 
 === FILE: src/Infrastructure.Persistence.SqlServer/Configurations/CategoryConfiguration.cs ===
-using Infrastructure.Persistence.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PersonalBlog.Domain.Entities.Categories;
 
@@ -3963,7 +4151,7 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(c => c.Title).HasMaxLength(150).IsRequired();
         builder.Property(c => c.Description).HasMaxLength(2048).IsRequired();
         builder.Property(c => c.Slug).HasMaxLength(150).IsRequired();
-        builder.Property(c => c.TinyUrl).HasMaxLength(10).IsRequired();
+        builder.Property(c => c.TinyUrl).HasMaxLength(32).IsRequired();
         builder.HasIndex(c => c.Slug).IsUnique();
         builder.HasIndex(c => c.TinyUrl).IsUnique();
     }
@@ -3973,7 +4161,7 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
 === FILE: src/Infrastructure.Persistence.SqlServer/Configurations/CommentConfiguration.cs ===
 using Infrastructure.Persistence.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using PersonalBlog.Domain.Entities.Posts;
+using PersonalBlog.Domain.Entities.Comments;
 
 namespace Infrastructure.Persistence.SqlServer.Configurations;
 
@@ -4023,7 +4211,6 @@ public class ContactMessageConfiguration : IEntityTypeConfiguration<ContactMessa
 
 
 === FILE: src/Infrastructure.Persistence.SqlServer/Configurations/CourseConfiguration.cs ===
-using Infrastructure.Persistence.SqlServer.DbExtensions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PersonalBlog.Domain.Entities.Courses;
 
@@ -4038,10 +4225,12 @@ public class CourseConfiguration : IEntityTypeConfiguration<Course>
         builder.Property(c => c.Title).HasMaxLength(200).IsRequired();
         builder.Property(c => c.Description).HasMaxLength(2048);
         builder.Property(c => c.CoverImageUrl).HasMaxLength(2048);
-        builder.Property(c => c.TinyUrl).HasMaxLength(10).IsRequired();
+        builder.Property(c => c.TinyUrl).HasMaxLength(32).IsRequired();
         builder.Property(c => c.Slug).HasMaxLength(200).IsRequired();
 
-        builder.Property(e => e.RelatedCourses).HasConversion(EfCoreValueConverter.CreateIntListValueConverter());
+        builder.Property(e => e.RelatedCourses)
+            .HasConversion(EfCoreValueConverter.CreateIntListValueConverter())
+            .Metadata.SetValueComparer(EfCoreValueConverter.CreateIntListValueComparer());
 
         builder.HasIndex(c => c.Slug).IsUnique();
         builder.HasIndex(c => c.TinyUrl).IsUnique();
@@ -4103,7 +4292,7 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
 
         builder.Property(p => p.Slug).HasMaxLength(250).IsRequired();
 
-        builder.Property(c => c.TinyUrl).HasMaxLength(10).IsRequired();
+        builder.Property(c => c.TinyUrl).HasMaxLength(32).IsRequired();
 
         builder.Property(p => p.Summary).HasMaxLength(500).IsRequired();
 
@@ -4118,7 +4307,8 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
         builder.Property(c => c.OgImageUrl).HasMaxLength(2048);
 
         builder.Property(c => c.RelatedPosts).HasMaxLength(2048)
-        .HasConversion(EfCoreValueConverter.CreateIntListValueConverter()); ;
+            .HasConversion(EfCoreValueConverter.CreateIntListValueConverter())
+            .Metadata.SetValueComparer(EfCoreValueConverter.CreateIntListValueComparer());
 
         builder.HasIndex(p => p.Slug).IsUnique();
         builder.HasIndex(p => p.TinyUrl).IsUnique();
@@ -4217,7 +4407,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(p => p.Slug).HasMaxLength(200).IsRequired();
         builder.HasIndex(p => p.Slug).IsUnique();
 
-        builder.Property(c => c.TinyUrl).HasMaxLength(10).IsRequired();
+        builder.Property(c => c.TinyUrl).HasMaxLength(32).IsRequired();
         builder.HasIndex(p => p.TinyUrl).IsUnique();
     }
 }
@@ -4301,7 +4491,7 @@ global using Infrastructure.Persistence.SqlServer;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Design;
 
-namespace Iau.Bazaar.Infrastructure.SqlStore;
+namespace Infrastructure.Persistence.SqlServer;
 
 public class DbContextDesignTimeFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
@@ -4355,7 +4545,7 @@ public static class ChangeTrackerExtensions
 }
 
 === FILE: src/Infrastructure.Persistence.SqlServer/DbExtensions/DataResultExtensions.cs ===
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 
@@ -4423,6 +4613,30 @@ namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 
 public static class EfCoreValueConverter
 {
+    public static ValueConverter<List<int>, string> CreateIntListValueConverter()
+    {
+        return new ValueConverter<List<int>, string>(
+            i => i == null ? string.Empty : string.Join(",", i),
+            s => string.IsNullOrWhiteSpace(s)
+                ? new List<int>()
+                : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(v => int.Parse(v.Trim().ToEnglishNumbers()))
+                    .ToList()
+        );
+    }
+
+    /// <summary>
+    /// ValueComparer برای List<int> - برای اینکه EF Core بتواند دو لیست را درست مقایسه کند
+    /// </summary>
+    public static ValueComparer<List<int>> CreateIntListValueComparer()
+    {
+        return new ValueComparer<List<int>>(
+            (c1, c2) => (c1 ?? new List<int>()).SequenceEqual(c2 ?? new List<int>()),
+            c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+            c => c == null ? new List<int>() : c.ToList()
+        );
+    }
+
     public static PropertyBuilder<T> HasJsonConversion<T>(this PropertyBuilder<T> propertyBuilder) where T : class, new()
     {
         ValueConverter<T, string> converter = new ValueConverter<T, string>
@@ -4487,17 +4701,6 @@ public static class EfCoreValueConverter
                 s.Split(new[] { ',' }).Select(v => v.Trim()).ToList());
     }
 
-    public static ValueConverter<List<int>, string> CreateIntListValueConverter()
-    {
-        return new ValueConverter<List<int>, string>(
-            i => i == null ? string.Empty : string.Join(",", i),
-            s => string.IsNullOrWhiteSpace(s)
-                ? new List<int>()
-                : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(v => int.Parse(v.Trim().ToEnglishNumbers()))
-                    .ToList()
-        );
-    }
 }
 
 === FILE: src/Infrastructure.Persistence.SqlServer/DbExtensions/EntityBaseConfiguration.cs ===
@@ -4523,11 +4726,11 @@ public static class EntityBaseConfiguration
 }
 
 === FILE: src/Infrastructure.Persistence.SqlServer/DbExtensions/ExpressionExtensions.cs ===
-using PersonalBlog.Utilities.Dtos;
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
+using Utilities.Dtos;
+using Utilities.Extensions;
 
 namespace Infrastructure.Persistence.SqlServer.DbExtensions;
 
@@ -4868,7 +5071,6 @@ public static class DependencyInjectionExtensions
 === FILE: src/Infrastructure.Persistence.SqlServer/Repositories/CategoryRepository.cs ===
 using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Categories.Dtos;
-using PersonalBlog.Utilities.Dtos;
 using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.Repositories
@@ -4933,7 +5135,7 @@ namespace Infrastructure.Persistence.SqlServer.Repositories
 === FILE: src/Infrastructure.Persistence.SqlServer/Repositories/CoursePostRepository.cs ===
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Courses.Dtos;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.Repositories;
 
@@ -5020,7 +5222,6 @@ public class CoursePostRepository(AppDbContext dbContext) : RepositoryBase<Cours
 === FILE: src/Infrastructure.Persistence.SqlServer/Repositories/CourseRepository.cs ===
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Courses.Dtos;
-using PersonalBlog.Utilities.Dtos;
 using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.Repositories;
@@ -5120,7 +5321,7 @@ global using Infrastructure.Persistence.SqlServer.DbExtensions;
 using PersonalBlog.Domain.Entities.Posts;
 using PersonalBlog.Domain.Entities.Posts.Dtos;
 using PersonalBlog.Domain.Entities.Posts.Entities;
-using PersonalBlog.Utilities.Dtos;
+using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.Repositories;
 
@@ -5241,7 +5442,6 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
 === FILE: src/Infrastructure.Persistence.SqlServer/Repositories/TagRepository.cs ===
 using PersonalBlog.Domain.Entities.Tags;
 using PersonalBlog.Domain.Entities.Tags.Dtos;
-using PersonalBlog.Utilities.Dtos;
 using Utilities.Dtos;
 
 namespace Infrastructure.Persistence.SqlServer.Repositories;
@@ -5408,26 +5608,35 @@ public static class SeedDataRunner
             {
                 var category = new Category
                 {
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
                     Title = "برنامه‌نویسی",
-                    Slug = "programming",
-                    Description = "یادداشت‌ها و آموزش‌های برنامه‌نویسی"
+                    Slug = "development",
+                    Description = "یادداشت‌ها و آموزش‌های برنامه‌نویسی",
+                    TinyUrl = "ct_development"
                 };
                 dbContext.Categories.Add(category);
 
                 var category2 = new Category
                 {
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
                     Title = "معماری نرم افزار",
                     Slug = "software-architecture",
-                    Description = "معماری نرم افزار"
+                    Description = "معماری نرم افزار",
+                    TinyUrl = "ct_software_architecture"
                 };
 
                 dbContext.Categories.Add(category2);
 
                 var category3 = new Category
                 {
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
                     Title = "توسعه شخصی",
                     Slug = "self-development",
-                    Description = "نوشته های توسعه شخصی"
+                    Description = "نوشته های توسعه شخصی",
+                    TinyUrl = "ct_self_architecture"
                 };
 
                 dbContext.Categories.Add(category3);
@@ -5435,10 +5644,13 @@ public static class SeedDataRunner
 
                 var course = new Course
                 {
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
                     Title = "قضاوت مهندسی",
                     Slug = "engineering-judgment",
                     Description = "قضاوت مهندسی",
-                    IsPublished = false
+                    IsPublished = false,
+                    TinyUrl = "ct_engineering_judgment"
                 };
                 dbContext.Courses.Add(course);
 
@@ -5451,7 +5663,9 @@ public static class SeedDataRunner
                     Summary = "اولین پست این وبلاگ شخصی، برای تست راه‌اندازی اولیه.",
                     Content = "<p>این یک پست نمونه است که هنگام seed دیتابیس ساخته می‌شود.</p>",
                     IsPublished = true,
-                    PublishedAt = DateTime.Now,
+                    CreatedAt = new DateTime(2026, 12, 9),
+                    UpdatedAt = new DateTime(2026, 12, 9),
+                    PublishedAt = new DateTime(2026, 12, 9),
                     CategoryId = category.Id,
                 });
                 await dbContext.SaveChangesAsync();
@@ -5478,7 +5692,7 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
 
 
 === FILE: src/Utilities/Alghoritms/LevenshteinDistance.cs ===
-namespace PersonalBlog.Utilities.Alghoritms;
+namespace Utilities.Alghoritms;
 
 public static class LevenshteinDistance
 {
@@ -5525,7 +5739,7 @@ public static class LevenshteinDistance
 
 === FILE: src/Utilities/AsyncLazy.cs ===
 // PersonalBlog.Utilities/AsyncLazy.cs
-namespace PersonalBlog.Utilities;
+namespace Utilities;
 
 /// <summary>
 /// یک مقدار تنبل که به صورت ناهمگام مقداردهی می‌شود.
@@ -5540,7 +5754,7 @@ public sealed class AsyncLazy<T> : Lazy<Task<T>>
 }
 
 === FILE: src/Utilities/Dtos/GridAllowedPropertyFilterDto.cs ===
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class GridAllowedPropertyFilterDto
 {
@@ -5570,7 +5784,7 @@ public class GridAllowedPropertyFilterDto
 === FILE: src/Utilities/Dtos/GridDataSourceRequest.cs ===
 using System.Text.Json.Serialization;
 
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class GridDataSourceRequest
 {
@@ -5610,7 +5824,7 @@ public class GridDataSourceRequest
 
 
 === FILE: src/Utilities/Dtos/GridDataSourceRequestAllowedParameters.cs ===
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class GridDataSourceRequestAllowedParameters
 {
@@ -5625,7 +5839,7 @@ public class GridDataSourceRequestAllowedParameters
 }
 
 === FILE: src/Utilities/Dtos/GridDataSourceResult.cs ===
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class GridDataSourceResult<T> where T : class
 {
@@ -5639,7 +5853,7 @@ public class GridDataSourceResult<T> where T : class
 === FILE: src/Utilities/Dtos/GridParamsInputDto.cs ===
 using System.Text.Json.Serialization;
 
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class GridParamsInputDto
 {
@@ -5662,7 +5876,7 @@ public class GridParamsInputDto
 === FILE: src/Utilities/Dtos/GridPropertyFilterDto.cs ===
 using System.Text.Json.Serialization;
 
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class GridPropertyFilterDto
 {
@@ -5681,7 +5895,7 @@ public class GridPropertyFilterDto
 === FILE: src/Utilities/Dtos/GridSortDto.cs ===
 using System.Text.Json.Serialization;
 
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class GridSortDto
 {
@@ -5700,7 +5914,7 @@ public class GridSortDto
 
 
 === FILE: src/Utilities/Dtos/GridtFilterOperationConstants.cs ===
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public static class GridFilterOperationConstants
 {
@@ -5726,7 +5940,7 @@ public class IdTitleDto<T>
 
 
 === FILE: src/Utilities/Dtos/PersianDateOffsetsDto.cs ===
-namespace PersonalBlog.Utilities.Dtos;
+namespace Utilities.Dtos;
 
 public class PersianDateOffsetsDto
 {
@@ -5737,14 +5951,14 @@ public class PersianDateOffsetsDto
 }
 
 === FILE: src/Utilities/Expressions/ExpressionExtensions.cs ===
-using PersonalBlog.Utilities.Dtos;
-using PersonalBlog.Utilities.Expressions;
-using PersonalBlog.Utilities.Extensions;
 using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
+using Utilities.Dtos;
+using Utilities.Expressions;
+using Utilities.Extensions;
 
-namespace PersonalBlog.Utilities.Expressions;
+namespace Utilities.Expressions;
 
 public static class ExpressionExtensions
 {
@@ -6013,7 +6227,7 @@ public static class ExpressionExtensions
 
 
 === FILE: src/Utilities/Extensions/CurrencyStringExtensions.cs ===
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class CurrencyStringExtensions
 {
@@ -6079,10 +6293,10 @@ public static class CurrencyStringExtensions
 
 === FILE: src/Utilities/Extensions/DateTimeExtensions.cs ===
 using DNTPersianUtils.Core;
-using PersonalBlog.Utilities.Dtos;
 using System.Globalization;
+using Utilities.Dtos;
 
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class DateTimeExtensions
 {
@@ -6157,7 +6371,7 @@ public static class DateTimeExtensions
 }
 
 === FILE: src/Utilities/Extensions/ErrorMessageExtension.cs ===
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class ErrorMessageExtension
 {
@@ -6175,7 +6389,7 @@ public static class ErrorMessageExtension
 }
 
 === FILE: src/Utilities/Extensions/FileExtension.cs ===
-using PersonalBlog.Utilities.Extensions;
+using Utilities.Extensions;
 
 namespace Iau.IT.Utility.Extensions;
 
@@ -6854,7 +7068,7 @@ public static partial class FileExtension
 === FILE: src/Utilities/Extensions/GenericConventionExtensions.cs ===
 using Newtonsoft.Json;
 
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class GenericConventionExtensions
 {
@@ -6883,7 +7097,7 @@ public static class GenericConventionExtensions
 }
 
 === FILE: src/Utilities/Extensions/MimeTypeExtension.cs ===
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class MimeTypeExtension
 {
@@ -7474,7 +7688,7 @@ public static class MimeTypeExtension
 }
 
 === FILE: src/Utilities/Extensions/ReflectionExtensions.cs ===
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class ReflectionExtensions
 {
@@ -7489,7 +7703,7 @@ using DNTPersianUtils.Core;
 using DNTPersianUtils.Core.Normalizer;
 using System.Text.RegularExpressions;
 
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static partial class StringExtensions
 {
@@ -7662,7 +7876,7 @@ public static partial class StringExtensions
 }
 
 === FILE: src/Utilities/Extensions/TypeCheckExtensions.cs ===
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class TypeCheckExtensions
 {
@@ -7719,7 +7933,7 @@ public static class TypeCheckExtensions
 }
 
 === FILE: src/Utilities/Extensions/TypeExtensions.cs ===
-namespace PersonalBlog.Utilities.Extensions;
+namespace Utilities.Extensions;
 
 public static class TypeExtensions
 {
@@ -7730,7 +7944,7 @@ public static class TypeExtensions
 }
 
 === FILE: src/Utilities/Helpers/StringHelper.cs ===
-namespace PersonalBlog.Utilities.Helpers;
+namespace Utilities.Helpers;
 
 public static class StringHelper
 {
@@ -7756,7 +7970,7 @@ public static class StringHelper
 }
 
 === FILE: src/Utilities/ToFileDbLoggers/Class1.cs ===
-namespace PersonalBlog.Utilities.ToFileDbLoggers
+namespace Utilities.ToFileDbLoggers
 {
     internal class Class1
     {
@@ -7794,9 +8008,171 @@ global using System.Text;
   "AllowedHosts": "*",
   "ConnectionStrings": {
     "DatabaseConnection": "Persist Security Info=False;Data Source=.;Initial Catalog=RpBlogDb;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+  "AdminSeed": {
+    "Email": "admin@example.com",
+    "Password": "Admin@123456"
+  },
+  "RecaptchaSettings": {
+    "SiteKey": "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXQZke",
+    "SecretKey": "6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe",
+    "MinimumScore": 0.5
+  },
+  "EmailSettings": {
+    "Host": "smtp.gmail.com",
+    "Port": 587,
+    "EnableSsl": true,
+    "Username": "your-email@gmail.com",
+    "Password": "your-app-password",
+    "FromAddress": "your-email@gmail.com",
+    "FromDisplayName": "وبلاگ شخصی",
+    "AdminNotificationAddress": "admin@example.com"
+  },
+  "SocialLinks": {
+    "GitHub": "https://github.com/yourusername",
+    "LinkedIn": "https://linkedin.com/in/yourusername",
+    "Twitter": "https://twitter.com/yourusername",
+    "Telegram": "https://t.me/yourusername"
+  },
+  "CacheSettings": {
+    "PublicPagesExpirationMinutes": 5
   }
 }
 
+=== FILE: src/Web/Components/Admin/Auth/AdminAuthStateProvider.cs ===
+using Microsoft.AspNetCore.Components.Authorization;
+using System.Security.Claims;
+
+namespace Web.Components.Admin.Auth;
+
+/// <summary>
+/// چون بلزور سرور نمی‌تواند مستقیماً از کوکی احراز هویت بخواند،
+/// از طریق IHttpContextAccessor وضعیت کاربر لاگین‌شده را دریافت می‌کنیم.
+/// </summary>
+public class AdminAuthStateProvider(IHttpContextAccessor httpContextAccessor) : AuthenticationStateProvider
+{
+    public override Task<AuthenticationState> GetAuthenticationStateAsync()
+    {
+        var httpContext = httpContextAccessor.HttpContext;
+
+        if (httpContext?.User?.Identity?.IsAuthenticated == true)
+        {
+            var claims = httpContext.User.Claims.ToList();
+
+            // اگر نقش در Claims نیست، از UserManager استفاده نمی‌کنیم
+            // چون فقط یک نقش داریم، مستقیم چک می‌کنیم
+            var identity = new ClaimsIdentity(claims, "AdminAuth");
+            var user = new ClaimsPrincipal(identity);
+
+            return Task.FromResult(new AuthenticationState(user));
+        }
+
+        return Task.FromResult(new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity())));
+    }
+
+    /// <summary>
+    /// فراخوانی بعد از لاگین/لاگوت برای به‌روزرسانی وضعیت
+    /// </summary>
+    public void NotifyUserChanged()
+    {
+        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+    }
+}
+
+=== FILE: src/Web/Components/Admin/Auth/Login.razor ===
+@page "/admin/login"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Commons
+@using Web.Components.Admin.Auth
+@inject ICaptchaService Captcha
+@inject NavigationManager Navigation
+@inject AdminAuthStateProvider AdminAuthState
+
+<PageTitle>ورود ادمین | وبلاگ شخصی</PageTitle>
+
+<div class="max-w-sm mx-auto mt-10 px-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+        <div class="text-center mb-6">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">ورود مدیریت</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">فقط ادمین سایت می‌تواند وارد شود</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm rounded-lg p-3 mb-4">
+                @_error
+            </div>
+        }
+
+        <form method="post" action="/admin/login" class="space-y-4">
+            <input type="hidden" name="CaptchaId" value="@_captchaId" />
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ایمیل</label>
+                <input type="email" name="Email" required autocomplete="username"
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-white"
+                       placeholder="admin@example.com" dir="ltr" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رمز عبور</label>
+                <input type="password" name="Password" required autocomplete="current-password"
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-white"
+                       dir="ltr" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">کپچا</label>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-lg font-mono font-bold select-none bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white tracking-wider">
+                        @_captchaQuestion
+                    </span>
+                    <button type="button" @onclick="RefreshCaptcha"
+                            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            title="کپچای جدید">
+                        🔄
+                    </button>
+                </div>
+                <input type="number" name="CaptchaAnswer" required
+                       class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-white"
+                       placeholder="پاسخ را وارد کنید" />
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="RememberMe" value="true" id="remember"
+                       class="rounded border-gray-300 dark:border-gray-600 text-sky-600 focus:ring-sky-500" />
+                <label for="remember" class="text-sm text-gray-700 dark:text-gray-300">مرا به خاطر بسپار</label>
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-sky-600 hover:bg-sky-700 text-white rounded-lg py-2.5 text-sm font-medium transition">
+                ورود
+            </button>
+        </form>
+    </div>
+</div>
+
+@code {
+    private string _captchaId = "";
+    private string _captchaQuestion = "";
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshCaptcha();
+
+        // خواندن خطا از query string
+        var uri = new Uri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        _error = query["error"];
+    }
+
+    private async Task RefreshCaptcha()
+    {
+        (_captchaId, _captchaQuestion) = await Captcha.GenerateChallengeAsync(CancellationToken.None);
+    }
+}
 
 === FILE: src/Web/Components/Admin/Courses/CoursePosts.razor ===
 @* @page "/admin/courses/{CourseId:int}/posts"
@@ -8432,7 +8808,7 @@ else
 
         try
         {
-            _course = await CourseHandler.Invoke(
+            _course = await CourseHandler.Handle(
                 new GetCourseInfoQuery
                 {
                     Id = CourseId
@@ -8456,7 +8832,7 @@ else
 
         try
         {
-            var result = await GridHandler.Invoke(
+            var result = await GridHandler.Handle(
                 new GetCoursePostsGridQuery
                 {
                     CourseId = CourseId,
@@ -8490,7 +8866,7 @@ else
     {
         try
         {
-            _posts = await PostsLookup.Invoke(
+            _posts = await PostsLookup.Handle(
                 new GetPostsLookupQuery(),
                 CancellationToken.None)
                 ?? new();
@@ -8560,7 +8936,7 @@ else
         {
             if (_editing)
             {
-                await UpdateHandler.Invoke(
+                await UpdateHandler.Handle(
                     _updateModel,
                     CancellationToken.None);
 
@@ -8569,7 +8945,7 @@ else
             }
             else
             {
-                await AddPostHandler.Invoke(
+                await AddPostHandler.Handle(
                     _addModel,
                     CancellationToken.None);
 
@@ -8602,7 +8978,7 @@ else
 
         try
         {
-            await RemoveHandler.Invoke(
+            await RemoveHandler.Handle(
                 new RemovePostFromCourseCommand
                 {
                     Id = item.Id
@@ -9279,7 +9655,7 @@ else
 
         try
         {
-            GridDataSourceResult<CourseGridDto> result = await GridHandler.Invoke(
+            GridDataSourceResult<CourseGridDto> result = await GridHandler.Handle(
                 new GetCourseListAsGridQuery
                 {
                     Page = page,
@@ -9371,7 +9747,7 @@ else
         {
             if (_editing)
             {
-                await UpdateHandler.Invoke(
+                await UpdateHandler.Handle(
                     _updateModel,
                     CancellationToken.None);
 
@@ -9380,7 +9756,7 @@ else
             }
             else
             {
-                await CreateHandler.Invoke(
+                await CreateHandler.Handle(
                     _createModel,
                     CancellationToken.None);
 
@@ -9413,7 +9789,7 @@ else
 
         try
         {
-            await DeleteHandler.Invoke(
+            await DeleteHandler.Handle(
                 new DeleteCourseCommand
                 {
                     Id = item.Id
@@ -9456,36 +9832,83 @@ else
 
 === FILE: src/Web/Components/Admin/Layout/AdminLayout.razor ===
 @inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthState
 
-<div class="d-flex" style="min-height: 100vh;">
-    <nav class="bg-dark text-white p-3 flex-shrink-0" style="width: 240px;">
-        <div class="mb-4">
-            <h5 class="mb-0">پنل ادمین</h5>
-            <small class="text-white-50">Personal Blog</small>
+@if (_authorized)
+{
+    <div class="d-flex" style="min-height: 100vh;">
+        <nav class="bg-dark text-white p-3 flex-shrink-0" style="width: 240px;">
+            <div class="mb-4">
+                <h5 class="mb-0">پنل ادمین</h5>
+                <small class="text-white-50">Personal Blog</small>
+            </div>
+            <ul class="nav flex-column gap-1">
+                <li class="nav-item">
+                    <a class="nav-link text-white rounded px-3 py-2" href="/admin">داشبورد</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white rounded px-3 py-2" href="/admin/categories">دسته‌بندی‌ها</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white rounded px-3 py-2" href="/admin/posts">مطالب</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white rounded px-3 py-2" href="/admin/tags">برچسب‌ها</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white rounded px-3 py-2" href="/admin/courses">دوره‌ها</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white rounded px-3 py-2" href="/admin/projects">پروژه‌ها</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <form method="post" action="/admin/logout">
+                        <button type="submit" class="nav-link text-danger rounded px-3 py-2 border-0 bg-transparent w-100 text-start">
+                            ← خروج
+                        </button>
+                    </form>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white-50 rounded px-3 py-2" href="/">← بازگشت به سایت</a>
+                </li>
+            </ul>
+        </nav>
+        <main class="flex-grow-1 bg-light p-4">
+            @Body
+        </main>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <p class="text-muted">در حال بررسی دسترسی...</p>
         </div>
-        <ul class="nav flex-column gap-1">
-            <li class="nav-item">
-                <a class="nav-link text-white rounded px-3 py-2" href="/admin">داشبورد</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link text-white rounded px-3 py-2" href="/admin/categories">دسته‌بندی‌ها</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link text-white rounded px-3 py-2" href="/admin/posts">مطالب</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link text-white rounded px-3 py-2" href="/admin/tags">برچسب‌ها</a>
-            </li>
-            <li class="nav-item mt-4">
-                <a class="nav-link text-white-50 rounded px-3 py-2" href="/">← بازگشت به سایت</a>
-            </li>
-        </ul>
-    </nav>
-    <main class="flex-grow-1 bg-light p-4">
-        @Body
-    </main>
-</div>
+    </div>
+}
 
+@code {
+    private bool _authorized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // چک می‌کنیم کاربر لاگین باشد
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            _authorized = true;
+        }
+        else
+        {
+            // هدایت به صفحه لاگین
+            Navigation.NavigateTo("/admin/login", forceLoad: true);
+        }
+    }
+}
 
 === FILE: src/Web/Components/Admin/Pages/Categories.razor ===
 @page "/admin/categories"
@@ -9493,8 +9916,8 @@ else
 @rendermode InteractiveServer
 @using AppServices.Admin.Categories.Grid
 @using AppServices.Base
-@using PersonalBlog.Utilities.Dtos
 @using PersonalBlog.Domain.Entities.Categories.Dtos;
+@using Utilities.Dtos
 
 @inject IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<CategoryGridDto>> GridHandler
 
@@ -9550,7 +9973,7 @@ else
     {
         try
         {
-            var result = await GridHandler.Invoke(new GetCategoryListAsGridQuery
+            var result = await GridHandler.Handle(new GetCategoryListAsGridQuery
             {
                 Page = 1,
                 PageSize = 50
@@ -9735,8 +10158,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _categories = await CategoriesLookup.Invoke(new GetCategoriesLookupQuery(), CancellationToken.None);
-        _tags = await TagsLookup.Invoke(new GetTagsLookupQuery(), CancellationToken.None);
+        _categories = await CategoriesLookup.Handle(new GetCategoriesLookupQuery(), CancellationToken.None);
+        _tags = await TagsLookup.Handle(new GetTagsLookupQuery(), CancellationToken.None);
     }
 
     private void ToggleTag(int id, bool selected)
@@ -9752,7 +10175,7 @@ else
         try
         {
             _model.TagIds = _selectedTagIds.ToList();
-            var id = await CreateHandler.Invoke(_model, CancellationToken.None);
+            var id = await CreateHandler.Handle(_model, CancellationToken.None);
             Nav.NavigateTo($"/admin/posts/edit/{id}");
         }
         catch (Exception ex)
@@ -9918,10 +10341,10 @@ else
         _success = null;
         try
         {
-            _categories = await CategoriesLookup.Invoke(new GetCategoriesLookupQuery(), CancellationToken.None);
-            _tags = await TagsLookup.Invoke(new GetTagsLookupQuery(), CancellationToken.None);
+            _categories = await CategoriesLookup.Handle(new GetCategoriesLookupQuery(), CancellationToken.None);
+            _tags = await TagsLookup.Handle(new GetTagsLookupQuery(), CancellationToken.None);
 
-            var post = await GetHandler.Invoke(new GetPostQuery { Id = Id }, CancellationToken.None);
+            var post = await GetHandler.Handle(new GetPostQuery { Id = Id }, CancellationToken.None);
             _model = new UpdatePostCommand
             {
                 Id = post.Id,
@@ -9969,7 +10392,7 @@ else
         try
         {
             _model.TagIds = _selectedTagIds.ToList();
-            await UpdateHandler.Invoke(_model, CancellationToken.None);
+            await UpdateHandler.Handle(_model, CancellationToken.None);
             _success = "تغییرات ذخیره شد.";
         }
         catch (Exception ex)
@@ -9988,11 +10411,11 @@ else
 @page "/admin/posts"
 @layout Web.Components.Admin.Layout.AdminLayout
 @rendermode InteractiveServer
-@using AppServices.Admin.Posts.Grid
 @using AppServices.Admin.Posts.Delete
+@using AppServices.Admin.Posts.Grid
 @using AppServices.Base
-@using PersonalBlog.Utilities.Dtos
 @using PersonalBlog.Domain.Entities.Posts.Dtos
+@using Utilities.Dtos
 @inject IQueryHandler<GetPostListAsGridQuery, GridDataSourceResult<PostGridDto>> GridHandler
 @inject ICommandHandler<DeletePostCommand, int> DeleteHandler
 @inject NavigationManager Nav
@@ -10113,7 +10536,7 @@ else
         _page = page;
         try
         {
-            var result = await GridHandler.Invoke(new GetPostListAsGridQuery
+            var result = await GridHandler.Handle(new GetPostListAsGridQuery
             {
                 Page = _page,
                 PageSize = _pageSize
@@ -10141,7 +10564,7 @@ else
         _deleting = true;
         try
         {
-            await DeleteHandler.Invoke(new DeletePostCommand { Id = item.Id }, CancellationToken.None);
+            await DeleteHandler.Handle(new DeletePostCommand { Id = item.Id }, CancellationToken.None);
             _message = $"مطلب «{item.Title}» حذف شد.";
             _isError = false;
             await LoadPage(_page);
@@ -10422,7 +10845,7 @@ else
 
         try
         {
-            GridDataSourceResult<TagGridDto> result = await GridHandler.Invoke(
+            GridDataSourceResult<TagGridDto> result = await GridHandler.Handle(
                 new GetTagListAsGridQuery
                 {
                     Page = page,
@@ -10493,13 +10916,13 @@ else
         {
             if (_editing)
             {
-                await UpdateHandler.Invoke(
+                await UpdateHandler.Handle(
                     _updateModel,
                     CancellationToken.None);
             }
             else
             {
-                await CreateHandler.Invoke(
+                await CreateHandler.Handle(
                     _createModel,
                     CancellationToken.None);
             }
@@ -10533,7 +10956,7 @@ else
 
         try
         {
-            await DeleteHandler.Invoke(
+            await DeleteHandler.Handle(
                 new DeleteTagCommand
                 {
                     Id = item.Id
@@ -10811,7 +11234,7 @@ else
     {
         try
         {
-            _posts = await LatestPostsHandler.Invoke(new GetLatestPostsQuery { Count = 10 }, CancellationToken.None);
+            _posts = await LatestPostsHandler.Handle(new GetLatestPostsQuery { Count = 10 }, CancellationToken.None);
         }
         catch
         {
@@ -10909,7 +11332,7 @@ else
         _loading = true;
         try
         {
-            _post = await PostHandler.Invoke(new GetPostBySlugQuery { Slug = Slug }, CancellationToken.None);
+            _post = await PostHandler.Handle(new GetPostBySlugQuery { Slug = Slug }, CancellationToken.None);
         }
         catch
         {
@@ -10924,12 +11347,12 @@ else
 
 
 === FILE: src/Web/Components/_Imports.razor ===
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
 @using System.Net.Http
 @using System.Net.Http.Json
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
-@using static Microsoft.AspNetCore.Components.Web.RenderMode
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using Microsoft.JSInterop
 @using Web
@@ -10937,6 +11360,7 @@ else
 @using Web.Components.Admin.Layout
 @using Web.Components.Site.Layout
 @using AppServices.Base
+@using Microsoft.AspNetCore.Components.Authorization
 
 
 === FILE: src/Web/Properties/launchSettings.json ===

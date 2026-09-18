@@ -6,12 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <base href="/" />
     <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/bootstrap.rtl.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["Web.styles.css"]" />
     <link rel="stylesheet" href="css/site.css" />
     <!-- Tailwind CDN for Site (mobile-first) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+
+
+    <script src="@Assets["lib/tailwindcss/3_4_17.js"]"></script>
+    <script src="@Assets["lib/bootstrap/bootstrap.bundle.min.js"]"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
