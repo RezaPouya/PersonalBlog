@@ -3,6 +3,7 @@ using AppServices.Admin.Auth;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;                 // ← for [FromForm] / [FromServices]
 using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Identities;
 using Web.Components;
@@ -10,7 +11,7 @@ using Web.Components.Admin.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// این خط را قبل از ثبت‌های دیگر داشته باشید
+// HttpContextAccessor
 builder.Services.AddHttpContextAccessor();
 
 // لایه‌ها
@@ -32,9 +33,8 @@ builder.Services.AddIdentity<AppUser, AppRole>(options =>
 
 // Authentication State Provider برای بلزور
 builder.Services.AddScoped<AdminAuthStateProvider>();
-
-builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AdminAuthStateProvider>());
-
+builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
+    sp.GetRequiredService<AdminAuthStateProvider>());
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -56,7 +56,6 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
@@ -77,8 +76,8 @@ app.UseAntiforgery();
 
 // ورود ادمین (فرم پست سنتی برای تنظیم کوکی)
 app.MapPost("/admin/login", async (
-    [Microsoft.AspNetCore.Mvc.FromForm] LoginAdminCommand model,
-    LoginAdminCommandHandler handler,
+    [FromForm] LoginAdminCommand model,
+    [FromServices] LoginAdminCommandHandler handler,
     HttpContext httpContext) =>
 {
     try
@@ -94,7 +93,9 @@ app.MapPost("/admin/login", async (
 .DisableAntiforgery(); // فرم پست سنتی بدون توکن ضد جعل
 
 // خروج ادمین
-app.MapPost("/admin/logout", async (SignInManager<AppUser> signInManager, HttpContext httpContext) =>
+app.MapPost("/admin/logout", async (
+    SignInManager<AppUser> signInManager,
+    HttpContext httpContext) =>
 {
     await signInManager.SignOutAsync();
     return Results.Redirect("/admin/login");
