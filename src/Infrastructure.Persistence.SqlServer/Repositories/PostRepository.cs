@@ -62,6 +62,7 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
                 Id = p.Id,
                 CategoryId = p.CategoryId,
                 CategoryTitle = p.Category.Title,
+                CategorySlug = p.Category.Slug,
                 OgImageUrl = p.OgImageUrl,
                 PublishedAt = p.PublishedAt,
                 Slug = p.Slug,
@@ -83,6 +84,7 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
                 Summary = p.Summary,
                 UpdatedAt = p.UpdatedAt,
                 TagIds = p.PostTags.Select(p => p.TagId).ToList(),
+                Tags = p.PostTags.Select(p => p.Tag.Title).ToList(),
             }).
             FirstOrDefaultAsync(cancellationToken);
 
@@ -124,5 +126,80 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
                     TagId = tagId
                 });
         }
+    }
+
+    public async Task<List<PostDto>> GetLatestPublishedAsync(int count, bool? isInEnglish, CancellationToken cancellationToken)
+    {
+        return await base.DbContext.Posts.AsNoTracking()
+         .Where(p => p.IsPublished == true)
+         .OrderByDescending(p => p.PublishedAt)
+         .Take(count)
+          .Select(p => new PostDto
+          {
+              Id = p.Id,
+              CategoryId = p.CategoryId,
+              CategoryTitle = p.Category.Title,
+              CategorySlug = p.Category.Slug,
+              OgImageUrl = p.OgImageUrl,
+              PublishedAt = p.PublishedAt,
+              Slug = p.Slug,
+              TinyUrl = p.TinyUrl,
+              Title = p.Title,
+              Content = p.Content,
+              CoverImageUrl = p.CoverImageUrl,
+              CreatedAt = p.CreatedAt,
+              DeletedAt = p.DeletedAt,
+              IsCommentsEnabled = p.IsCommentsEnabled,
+              IsDeleted = p.IsDeleted,
+              IsInEnglish = p.IsInEnglish,
+              IsPublished = p.IsPublished,
+              MetaDescription = p.MetaDescription,
+              MetaTitle = p.MetaTitle,
+              PostCommentsCount = p.Comments.Count(),
+              RelatedPosts = p.RelatedPosts,
+              ViewCount = p.ViewCount,
+              Summary = p.Summary,
+              UpdatedAt = p.UpdatedAt,
+              TagIds = p.PostTags.Select(p => p.TagId).ToList(),
+              Tags = p.PostTags.Select(p => p.Tag.Title).ToList(),
+          }).ToListAsync(cancellationToken);
+
+    }
+
+    public async Task<PostDto?> GetPublishedBySlugAsync(string slug, CancellationToken cancellationToken)
+    {
+        return await base.DbContext.Posts.AsNoTracking()
+      .Where(p => p.IsPublished == true)
+      .Where(p => p.Slug == slug)
+      .OrderByDescending(p => p.PublishedAt)
+       .Select(p => new PostDto
+       {
+           Id = p.Id,
+           CategoryId = p.CategoryId,
+           CategoryTitle = p.Category.Title,
+           CategorySlug = p.Category.Slug,
+           OgImageUrl = p.OgImageUrl,
+           PublishedAt = p.PublishedAt,
+           Slug = p.Slug,
+           TinyUrl = p.TinyUrl,
+           Title = p.Title,
+           Content = p.Content,
+           CoverImageUrl = p.CoverImageUrl,
+           CreatedAt = p.CreatedAt,
+           DeletedAt = p.DeletedAt,
+           IsCommentsEnabled = p.IsCommentsEnabled,
+           IsDeleted = p.IsDeleted,
+           IsInEnglish = p.IsInEnglish,
+           IsPublished = p.IsPublished,
+           MetaDescription = p.MetaDescription,
+           MetaTitle = p.MetaTitle,
+           PostCommentsCount = p.Comments.Count(),
+           RelatedPosts = p.RelatedPosts,
+           ViewCount = p.ViewCount,
+           Summary = p.Summary,
+           UpdatedAt = p.UpdatedAt,
+           TagIds = p.PostTags.Select(p => p.TagId).ToList(),
+           Tags = p.PostTags.Select(p => p.Tag.Title).ToList(),
+       }).FirstOrDefaultAsync(cancellationToken);
     }
 }

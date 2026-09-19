@@ -12,4 +12,6 @@ public interface IPostRepository : IRepository<Post>
     Task<GridDataSourceResult<PostGridDto>> GetGridAsync(GridDataSourceRequest request, CancellationToken cancellationToken);
     Task ReplaceTagsAsync(int postId, IEnumerable<int> tagIds, CancellationToken cancellationToken);
     Task<List<IdTitleDto<int>>> GetListForLookupAsync(CancellationToken cancellationToken);
+    Task<List<PostDto>> GetLatestPublishedAsync(int count, bool? isInEnglish, CancellationToken cancellationToken);
+    Task<PostDto?> GetPublishedBySlugAsync(string slug, CancellationToken cancellationToken);
 }
