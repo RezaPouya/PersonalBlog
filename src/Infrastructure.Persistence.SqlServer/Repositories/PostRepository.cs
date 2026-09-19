@@ -8,6 +8,14 @@ namespace Infrastructure.Persistence.SqlServer.Repositories;
 
 public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbContext), IPostRepository
 {
+    public async Task<List<IdTitleDto<int>>> GetListForLookupAsync(CancellationToken cancellationToken)
+    {
+        return await base.DbContext.Posts.AsNoTracking()
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new IdTitleDto<int> { Id = p.Id, Title = p.Title })
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<bool> DoesCategoryHaveAnyPost(int categoryId, CancellationToken cancellationToken)
     {
         var result = await base.DbContext.Posts.AsNoTracking()

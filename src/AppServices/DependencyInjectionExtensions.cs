@@ -18,6 +18,7 @@ namespace AppServices
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
             services.Configure<SocialLinksSettings>(configuration.GetSection("SocialLinks"));
             services.Configure<CacheSettings>(configuration.GetSection("CacheSettings"));
+            services.Configure<FileStorageSettings>(configuration.GetSection("FileStorage"));
 
             services.AddTransient<IHtmlSanitizerService, HtmlSanitizerService>();
             services.AddScoped<ICaptchaService, MathCaptchaService>();

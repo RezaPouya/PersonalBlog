@@ -11,4 +11,5 @@ public interface IPostRepository : IRepository<Post>
     Task<PostDto?> GetInfoByIdAsync(int id, CancellationToken cancellationToken);
     Task<GridDataSourceResult<PostGridDto>> GetGridAsync(GridDataSourceRequest request, CancellationToken cancellationToken);
     Task ReplaceTagsAsync(int postId, IEnumerable<int> tagIds, CancellationToken cancellationToken);
+    Task<List<IdTitleDto<int>>> GetListForLookupAsync(CancellationToken cancellationToken);
 }

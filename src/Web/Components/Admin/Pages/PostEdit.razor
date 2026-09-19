@@ -7,6 +7,7 @@
 @using AppServices.Base
 @using PersonalBlog.Domain.Entities.Posts.Dtos
 @using Utilities.Dtos
+@using Web.Components.Admin.Shared
 @inject IQueryHandler<GetPostQuery, PostDto> GetHandler
 @inject ICommandHandler<UpdatePostCommand, int> UpdateHandler
 @inject IQueryHandler<GetCategoriesLookupQuery, List<IdTitleDto<int>>> CategoriesLookup
@@ -59,8 +60,8 @@ else
                     <ValidationMessage For="() => _model.Summary" />
                 </div>
                 <div class="col-12">
-                    <label class="form-label">محتوا (HTML) *</label>
-                    <InputTextArea class="form-control font-monospace" rows="12" @bind-Value="_model.Content" dir="auto" />
+                    <label class="form-label">محتوا *</label>
+                    <HtmlEditor @bind-Value="_model.Content" MinHeight="360px" />
                     <ValidationMessage For="() => _model.Content" />
                 </div>
                 <div class="col-md-6">
@@ -74,8 +75,7 @@ else
                     </InputSelect>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">آدرس تصویر کاور</label>
-                    <InputText class="form-control" @bind-Value="_model.CoverImageUrl" dir="ltr" />
+                    <ImageUploader Label="تصویر کاور" SubFolder="posts" @bind-Value="_model.CoverImageUrl" />
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Meta Title</label>

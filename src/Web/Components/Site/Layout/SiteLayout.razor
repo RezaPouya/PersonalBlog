@@ -1,12 +1,17 @@
 @inherits LayoutComponentBase
 @inject IJSRuntime JS
 
-<div class="site-wrapper @(_isDark ? "dark" : "")" data-theme="@(_isDark ? "dark" : "light")">
-    <header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
+<div class="site-wrapper min-h-screen bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark transition-colors">
+    <header class="sticky top-0 z-50 bg-paper/90 dark:bg-paper-dark/90 backdrop-blur-md border-b border-line dark:border-line-dark">
         <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="/" class="text-xl font-bold text-sky-600 dark:text-sky-400">وبلاگ شخصی</a>
-            <div class="flex items-center gap-3">
-                <button type="button" @onclick="ToggleTheme" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition" aria-label="تغییر قالب">
+            <a href="/" class="text-lg font-bold tracking-tight">وبلاگ شخصی</a>
+            <nav class="hidden md:flex items-center gap-6 text-sm">
+                <a href="/" class="hover:text-gold dark:hover:text-gold-dark transition">خانه</a>
+                <a href="/posts" class="hover:text-gold dark:hover:text-gold-dark transition">مطالب</a>
+                <a href="/about" class="hover:text-gold dark:hover:text-gold-dark transition">درباره من</a>
+            </nav>
+            <div class="flex items-center gap-1">
+                <button type="button" @onclick="ToggleTheme" class="p-2 rounded-full hover:bg-ink/5 dark:hover:bg-ink-dark/10 transition" aria-label="تغییر قالب">
                     @if (_isDark)
                     {
                         <span>☀️</span>
@@ -16,26 +21,26 @@
                         <span>🌙</span>
                     }
                 </button>
-                <button type="button" @onclick="ToggleMenu" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden" aria-label="منو">
+                <button type="button" @onclick="ToggleMenu" class="p-2 rounded-full hover:bg-ink/5 dark:hover:bg-ink-dark/10 md:hidden" aria-label="منو">
                     ☰
                 </button>
             </div>
         </div>
         @if (_menuOpen)
         {
-            <nav class="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 space-y-2">
-                <a href="/" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">خانه</a>
-                <a href="/posts" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">مطالب</a>
-                <a href="/about" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">درباره من</a>
+            <nav class="md:hidden border-t border-line dark:border-line-dark px-4 py-3 space-y-1">
+                <a href="/" class="block py-2" @onclick="CloseMenu">خانه</a>
+                <a href="/posts" class="block py-2" @onclick="CloseMenu">مطالب</a>
+                <a href="/about" class="block py-2" @onclick="CloseMenu">درباره من</a>
             </nav>
         }
     </header>
 
-    <main class="max-w-3xl mx-auto px-4 py-6 min-h-[70vh]">
+    <main class="max-w-3xl mx-auto px-4 py-8 min-h-[70vh]">
         @Body
     </main>
 
-    <footer class="border-t border-gray-200 dark:border-gray-700 mt-12 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+    <footer class="border-t border-line dark:border-line-dark mt-12 py-8 text-center text-sm text-ink-soft dark:text-ink-softdark">
         <div class="max-w-3xl mx-auto px-4">
             <p>© @DateTime.Now.Year وبلاگ شخصی — همه حقوق محفوظ است.</p>
         </div>

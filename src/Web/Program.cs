@@ -1,5 +1,6 @@
 using AppServices;
 using AppServices.Admin.Auth;
+using AppServices.Commons;
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +9,7 @@ using PersonalBlog.Domain.Constants;
 using PersonalBlog.Domain.Entities.Identities;
 using Web.Components;
 using Web.Components.Admin.Auth;
+using Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +60,9 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMemoryCache();
 
+// آپلود/دانلود فایل (تصاویر پست‌ها و ...)
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -99,6 +104,28 @@ app.MapPost("/admin/logout", async (
 {
     await signInManager.SignOutAsync();
     return Results.Redirect("/admin/login");
+})
+.RequireAuthorization("AdminOnly");
+
+// ==================== دانلود فایل آپلودی (فقط ادمین) ====================
+// نکته: نمایش عمومی تصاویر در سایت (مثلاً <img src="/uploads/posts/xxx.jpg">)
+// نیازی به این اندپوینت ندارد و همان app.UseStaticFiles() بالا آن را سرو می‌کند.
+// این اندپوینت برای دانلود اجباری (Content-Disposition: attachment) از پنل ادمین است.
+app.MapGet("/admin/files/download", (string path, IWebHostEnvironment env) =>
+{
+    if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+        return Results.BadRequest("مسیر نامعتبر است.");
+
+    var relativePath = path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+    var fullPath = Path.GetFullPath(Path.Combine(env.WebRootPath, relativePath));
+    var uploadsRoot = Path.GetFullPath(Path.Combine(env.WebRootPath, "uploads"));
+
+    // دفاع در برابر Path Traversal (../..)
+    if (!fullPath.StartsWith(uploadsRoot, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath))
+        return Results.NotFound();
+
+    var fileName = Path.GetFileName(fullPath);
+    return Results.File(fullPath, "application/octet-stream", fileName);
 })
 .RequireAuthorization("AdminOnly");
 

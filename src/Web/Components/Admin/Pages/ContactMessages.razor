@@ -1,0 +1,139 @@
+@page "/admin/contact-messages"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.ContactMessages.Grid
+@using AppServices.Admin.ContactMessages.MarkAsRead
+@using AppServices.Admin.ContactMessages.Delete
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.ContactMessages.Dtos
+@using Utilities.Dtos
+@using Web.Components.Admin.Shared
+@inject IQueryHandler<GetContactMessageListAsGridQuery, GridDataSourceResult<ContactMessageGridDto>> GridHandler
+@inject ICommandHandler<MarkContactMessageAsReadCommand, int> MarkReadHandler
+@inject ICommandHandler<DeleteContactMessageCommand, int> DeleteHandler
+@inject IJSRuntime JS
+
+<PageTitle>پیام‌های تماس | ادمین</PageTitle>
+
+<h1 class="h3 mb-4">صندوق پیام‌های تماس</h1>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+    </div>
+}
+
+<DynamicGrid @ref="_grid" TItem="ContactMessageGridDto" PageSize="15" Columns="_columns" LoadData="LoadGridAsync">
+    <RowActions Context="item">
+        <button class="btn btn-sm btn-outline-secondary" @onclick="() => ShowAsync(item)">مشاهده</button>
+        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteAsync(item)">حذف</button>
+    </RowActions>
+</DynamicGrid>
+
+@if (_viewing is not null)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@_viewing.Subject</h5>
+                    <button type="button" class="btn-close" @onclick="() => _viewing = null"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row mb-0">
+                        <dt class="col-3">فرستنده</dt>
+                        <dd class="col-9">@_viewing.FullName</dd>
+                        <dt class="col-3">ایمیل</dt>
+                        <dd class="col-9" dir="ltr">@_viewing.Email</dd>
+                        <dt class="col-3">موبایل</dt>
+                        <dd class="col-9" dir="ltr">@_viewing.Cellphone</dd>
+                        <dt class="col-3">تاریخ</dt>
+                        <dd class="col-9">@_viewing.CreatedAtPersian</dd>
+                        <dt class="col-3">متن پیام</dt>
+                        <dd class="col-9" style="white-space:pre-wrap;">@_viewing.Body</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <a class="btn btn-outline-primary" href="mailto:@_viewing.Email">پاسخ با ایمیل</a>
+                    <button type="button" class="btn btn-light" @onclick="() => _viewing = null">بستن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DynamicGrid<ContactMessageGridDto>? _grid;
+    private List<GridColumn<ContactMessageGridDto>> _columns = new();
+    private ContactMessageGridDto? _viewing;
+    private string? _message;
+    private bool _isError;
+
+    protected override void OnInitialized()
+    {
+        _columns = new List<GridColumn<ContactMessageGridDto>>
+        {
+            new() { Header = "وضعیت", Width = "90px", CellTemplate = c =>
+                @<span class="badge @(c.IsRead ? "bg-secondary" : "bg-primary")">@(c.IsRead ? "خوانده شده" : "جدید")</span> },
+
+            new() { Header = "فرستنده", PropertyName = nameof(ContactMessageGridDto.FullName), Sortable = true, Filterable = true,
+                    CellTemplate = c =>
+                        @<div>
+                            <div>@c.FullName</div>
+                            <small class="text-muted" dir="ltr">@c.Email</small>
+                        </div> },
+
+            new() { Header = "موضوع", PropertyName = nameof(ContactMessageGridDto.Subject), Sortable = true, Filterable = true,
+                    CellText = c => c.Subject },
+
+            new() { Header = "تاریخ", PropertyName = nameof(ContactMessageGridDto.CreatedAt), Sortable = true,
+                    CellTemplate = c => @<small>@c.CreatedAtPersian</small> },
+        };
+    }
+
+    private async Task<GridDataSourceResult<ContactMessageGridDto>> LoadGridAsync(GridDataSourceRequest request)
+    {
+        var query = new GetContactMessageListAsGridQuery { Page = request.Page, PageSize = request.PageSize, InputParams = request.InputParams };
+        return await GridHandler.Handle(query, CancellationToken.None);
+    }
+
+    private async Task ShowAsync(ContactMessageGridDto item)
+    {
+        _viewing = item;
+
+        if (!item.IsRead)
+        {
+            try
+            {
+                await MarkReadHandler.Handle(new MarkContactMessageAsReadCommand { Id = item.Id }, CancellationToken.None);
+                item.IsRead = true;
+                if (_grid is not null) await _grid.RefreshAsync();
+            }
+            catch
+            {
+                // خواندن پیام مهم‌تر از شکست احتمالی ثبت "خوانده‌شد" است؛ نیازی به نمایش خطا نیست.
+            }
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(ContactMessageGridDto item)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"پیام «{item.Subject}» حذف شود؟");
+        if (!confirmed) return;
+
+        try
+        {
+            await DeleteHandler.Handle(new DeleteContactMessageCommand { Id = item.Id }, CancellationToken.None);
+            _message = "پیام حذف شد.";
+            _isError = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+}

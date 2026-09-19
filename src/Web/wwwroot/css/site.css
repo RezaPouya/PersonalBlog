@@ -10,3 +10,43 @@ html {
 input, select, textarea {
     font-size: 16px;
 }
+
+/* استایل محتوای HTML مطلب (تولید شده توسط ادیتور Quill در پنل ادمین).
+   کلاس‌های prose/prose-invert تیلویند چون پلاگین Typography لود نشده اثری نداشتند؛
+   این‌جا خودمان استایل می‌دهیم، هماهنگ با پالت رنگی سایت. */
+.post-content { line-height: 1.9; }
+.post-content h1, .post-content h2, .post-content h3, .post-content h4 {
+    font-weight: 700;
+    line-height: 1.4;
+    margin-top: 2rem;
+    margin-bottom: .75rem;
+}
+.post-content h2 { font-size: 1.4rem; }
+.post-content h3 { font-size: 1.2rem; }
+.post-content h4 { font-size: 1.05rem; }
+.post-content p { margin-bottom: 1.1rem; }
+.post-content ul, .post-content ol { margin: 0 0 1.1rem; padding-right: 1.5rem; }
+.post-content li { margin-bottom: .4rem; }
+.post-content a { color: #24555A; text-decoration: underline; text-underline-offset: 2px; }
+.dark .post-content a { color: #4FA0A6; }
+.post-content strong { font-weight: 700; }
+.post-content blockquote {
+    border-right: 3px solid #B8892B;
+    padding-right: 1rem;
+    color: #5B5648;
+    margin: 1.5rem 0;
+}
+.dark .post-content blockquote { border-color: #D4A537; color: #A39F91; }
+.post-content pre {
+    background: #1C2027;
+    color: #EDE9DE;
+    padding: 1rem;
+    border-radius: .75rem;
+    overflow-x: auto;
+    margin: 0 0 1.25rem;
+    direction: ltr;
+    text-align: left;
+    font-size: .85rem;
+}
+.post-content pre code { font-family: 'Cascadia Code', 'Courier New', monospace; }
+.post-content img { border-radius: .75rem; margin: 1.25rem 0; max-width: 100%; height: auto; }
