@@ -1,0 +1,126 @@
+@page "/admin/comments"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.Comments.Grid
+@using AppServices.Admin.Comments.SetApproval
+@using AppServices.Admin.Comments.Delete
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Comments.Dtos
+@using Utilities.Dtos
+@using Web.Components.Admin.Shared
+@inject IQueryHandler<GetCommentListAsGridQuery, GridDataSourceResult<CommentGridDto>> GridHandler
+@inject ICommandHandler<SetCommentApprovalCommand, int> ApprovalHandler
+@inject ICommandHandler<DeleteCommentCommand, int> DeleteHandler
+@inject IJSRuntime JS
+
+<PageTitle>کامنت‌ها | ادمین</PageTitle>
+
+<h1 class="h3 mb-4">مدیریت کامنت‌ها</h1>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+    </div>
+}
+
+<DynamicGrid @ref="_grid" TItem="CommentGridDto" PageSize="15" Columns="_columns" LoadData="LoadGridAsync">
+    <RowActions Context="item">
+        @if (!item.IsApproved)
+        {
+            <button class="btn btn-sm btn-outline-success" @onclick="() => SetApprovalAsync(item, true)">تأیید</button>
+        }
+        else
+        {
+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => SetApprovalAsync(item, false)">لغو تأیید</button>
+        }
+        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteAsync(item)">حذف</button>
+    </RowActions>
+</DynamicGrid>
+
+@code {
+    private DynamicGrid<CommentGridDto>? _grid;
+    private List<GridColumn<CommentGridDto>> _columns = new();
+    private string? _message;
+    private bool _isError;
+
+    protected override void OnInitialized()
+    {
+        _columns = new List<GridColumn<CommentGridDto>>
+        {
+            new() { Header = "پست", PropertyName = nameof(CommentGridDto.PostTitle), Sortable = true, Filterable = true,
+                    CellText = c => c.PostTitle },
+
+            new() { Header = "نویسنده", PropertyName = nameof(CommentGridDto.DisplayName), Sortable = true, Filterable = true,
+                    CellTemplate = c =>
+                        @<div>
+                            <div>@c.DisplayName</div>
+                            <small class="text-muted" dir="ltr">@c.Email</small>
+                        </div> },
+
+            new() { Header = "متن", CellTemplate = c =>
+                @<span title="@c.Content">@(c.Content.Length > 80 ? c.Content.Substring(0, 80) + "…" : c.Content)</span> },
+
+            new() { Header = "وضعیت", CellTemplate = c =>
+                @<div>
+                    @if (c.IsApproved)
+                    {
+                        <span class="badge bg-success">تأیید شده</span>
+                    }
+                    else if (c.IsSpam)
+                    {
+                        <span class="badge bg-danger">اسپم</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">در انتظار</span>
+                    }
+                </div> },
+
+            new() { Header = "تاریخ", PropertyName = nameof(CommentGridDto.CreatedAt), Sortable = true,
+                    CellTemplate = c => @<small>@c.CreatedAtPersian</small> },
+        };
+    }
+
+    private async Task<GridDataSourceResult<CommentGridDto>> LoadGridAsync(GridDataSourceRequest request)
+    {
+        var query = new GetCommentListAsGridQuery { Page = request.Page, PageSize = request.PageSize, InputParams = request.InputParams };
+        return await GridHandler.Handle(query, CancellationToken.None);
+    }
+
+    private async Task SetApprovalAsync(CommentGridDto item, bool approve)
+    {
+        try
+        {
+            await ApprovalHandler.Handle(new SetCommentApprovalCommand { Id = item.Id, IsApproved = approve }, CancellationToken.None);
+            _message = approve ? "کامنت تأیید شد." : "تأیید کامنت لغو شد.";
+            _isError = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(CommentGridDto item)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "این کامنت برای همیشه حذف شود؟");
+        if (!confirmed) return;
+
+        try
+        {
+            await DeleteHandler.Handle(new DeleteCommentCommand { Id = item.Id }, CancellationToken.None);
+            _message = "کامنت حذف شد.";
+            _isError = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+}

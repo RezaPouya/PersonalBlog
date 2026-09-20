@@ -5,6 +5,7 @@
 @using AppServices.Admin.Lookups
 @using AppServices.Base
 @using Utilities.Dtos
+@using Web.Components.Admin.Shared
 @inject ICommandHandler<CreatePostCommand, int> CreateHandler
 @inject IQueryHandler<GetCategoriesLookupQuery, List<IdTitleDto<int>>> CategoriesLookup
 @inject IQueryHandler<GetTagsLookupQuery, List<IdTitleDto<int>>> TagsLookup
@@ -42,8 +43,8 @@
                 <ValidationMessage For="() => _model.Summary" />
             </div>
             <div class="col-12">
-                <label class="form-label">محتوا (HTML) *</label>
-                <InputTextArea class="form-control font-monospace" rows="12" @bind-Value="_model.Content" dir="auto" />
+                <label class="form-label">محتوا *</label>
+                <HtmlEditor @bind-Value="_model.Content" MinHeight="360px" />
                 <ValidationMessage For="() => _model.Content" />
             </div>
             <div class="col-md-6">
@@ -58,8 +59,7 @@
                 <ValidationMessage For="() => _model.CategoryId" />
             </div>
             <div class="col-md-6">
-                <label class="form-label">آدرس تصویر کاور</label>
-                <InputText class="form-control" @bind-Value="_model.CoverImageUrl" dir="ltr" />
+                <ImageUploader Label="تصویر کاور" SubFolder="posts" @bind-Value="_model.CoverImageUrl" />
             </div>
             <div class="col-md-6">
                 <label class="form-label">Meta Title</label>

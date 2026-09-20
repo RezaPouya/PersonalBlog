@@ -1,0 +1,85 @@
+@page "/course/{Slug}"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Site.Courses
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Courses.Dtos
+@using Web.Components.Site.Shared
+@inject IQueryHandler<GetCourseBySlugQuery, CourseSiteDetailDto?> CourseHandler
+
+<SeoHead Title="@(_course?.Title ?? "دوره")" Description="@_course?.Description" />
+
+@if (_loading)
+{
+    <div class="animate-pulse space-y-4">
+        <div class="h-8 bg-line dark:bg-line-dark rounded w-1/2"></div>
+        <div class="h-4 bg-line dark:bg-line-dark rounded w-full"></div>
+    </div>
+}
+else if (_course is null)
+{
+    <div class="text-center py-20">
+        <p class="text-fg-muted dark:text-fg-muted-dark mb-3">دوره یافت نشد.</p>
+        <a href="/courses" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">بازگشت به دوره‌ها</a>
+    </div>
+}
+else
+{
+    <section class="mb-10">
+        <div class="text-xs font-mono text-accent2 dark:text-accent2-dark mb-2">دوره</div>
+        <h1 class="text-2xl md:text-3xl font-bold mb-3">@_course.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(_course.Description))
+        {
+            <p class="text-fg-muted dark:text-fg-muted-dark leading-7">@_course.Description</p>
+        }
+    </section>
+
+    <section>
+        <h2 class="text-lg font-bold mb-4">سرفصل‌ها (@_course.Posts.Count)</h2>
+
+        @if (_course.Posts.Count == 0)
+        {
+            <div class="text-center py-12 text-fg-muted dark:text-fg-muted-dark border border-dashed border-line dark:border-line-dark rounded-xl font-mono text-sm">
+                هنوز مطلبی به این دوره اضافه نشده است.
+            </div>
+        }
+        else
+        {
+            <ol class="space-y-1">
+                @foreach (var (item, index) in _course.Posts.Select((p, i) => (p, i + 1)))
+                {
+                    <li>
+                        <a href="/post/@item.PostSlug" class="flex items-center gap-3 py-3 px-3 -mx-3 rounded-lg hover:bg-surface dark:hover:bg-surface-dark transition group">
+                            <span class="font-mono text-xs text-fg-muted dark:text-fg-muted-dark w-6 text-center shrink-0">@index.ToString("00")</span>
+                            <span class="group-hover:text-accent dark:group-hover:text-accent-dark transition">@item.Title</span>
+                        </a>
+                    </li>
+                }
+            </ol>
+        }
+    </section>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = default!;
+
+    private CourseSiteDetailDto? _course;
+    private bool _loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        try
+        {
+            _course = await CourseHandler.Handle(new GetCourseBySlugQuery { Slug = Slug }, CancellationToken.None);
+        }
+        catch
+        {
+            _course = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

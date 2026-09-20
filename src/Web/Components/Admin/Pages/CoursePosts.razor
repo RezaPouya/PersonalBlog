@@ -1,0 +1,251 @@
+@page "/admin/course-posts/{CourseId:int}"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.CoursePosts.Grid
+@using AppServices.Admin.CoursePosts.Create
+@using AppServices.Admin.CoursePosts.Update
+@using AppServices.Admin.CoursePosts.Delete
+@using AppServices.Admin.Courses.Read
+@using AppServices.Admin.Lookups
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Courses.Dtos
+@using Utilities.Dtos
+@using Web.Components.Admin.Shared
+@inject IQueryHandler<GetCoursePostsGridQuery, GridDataSourceResult<CoursePostGridDto>> GridHandler
+@inject IQueryHandler<GetCourseQuery, CourseHeaderDto?> CourseHandler
+@inject IQueryHandler<GetPostsForCourseLookupQuery, List<IdTitleDto<int>>> PostsLookup
+@inject ICommandHandler<AddPostToCourseCommand, int> AddHandler
+@inject ICommandHandler<UpdateCoursePostCommand, int> UpdateHandler
+@inject ICommandHandler<RemovePostFromCourseCommand, int> RemoveHandler
+@inject IJSRuntime JS
+
+<PageTitle>مطالب دوره | ادمین</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">مطالب دوره: @(_course?.Title ?? "...")</h1>
+        <a href="/admin/courses" class="small">بازگشت به لیست دوره‌ها</a>
+    </div>
+    <button class="btn btn-success" @onclick="ShowAdd">+ افزودن پست به دوره</button>
+</div>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+    </div>
+}
+
+<DynamicGrid @ref="_grid" TItem="CoursePostGridDto" PageSize="20" Columns="_columns" LoadData="LoadGridAsync">
+    <RowActions Context="item">
+        <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEdit(item)">ویرایش</button>
+        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmRemoveAsync(item)">حذف از دوره</button>
+    </RowActions>
+</DynamicGrid>
+
+@if (_showModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_form.Id == 0 ? "افزودن پست به دوره" : "ویرایش مطلب دوره")</h5>
+                        <button type="button" class="btn-close" @onclick="() => _showModal = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(_formError))
+                        {
+                            <div class="alert alert-danger">@_formError</div>
+                        }
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">پست *</label>
+                                <InputSelect class="form-select" @bind-Value="_form.PostId" disabled="@(_form.Id != 0)">
+                                    <option value="0">انتخاب کنید...</option>
+                                    @foreach (var p in _posts)
+                                    {
+                                        <option value="@p.Id">@p.Title</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">عنوان جایگزین (اختیاری)</label>
+                                <InputText class="form-control" @bind-Value="_form.Title" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">ترتیب در دوره</label>
+                                <InputNumber class="form-control" @bind-Value="_form.OrderInCourse" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">توضیح جایگزین (اختیاری)</label>
+                                <InputTextArea class="form-control" rows="2" @bind-Value="_form.Description" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" id="cpPub" @bind-Value="_form.IsPublished" />
+                                    <label class="form-check-label" for="cpPub">در دوره نمایش داده شود</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" @onclick="() => _showModal = false">انصراف</button>
+                        <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "در حال ذخیره..." : "ذخیره")</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int CourseId { get; set; }
+
+    private DynamicGrid<CoursePostGridDto>? _grid;
+    private List<GridColumn<CoursePostGridDto>> _columns = new();
+    private CourseHeaderDto? _course;
+    private List<IdTitleDto<int>> _posts = new();
+    private string? _message;
+    private bool _isError;
+    private bool _showModal;
+    private bool _saving;
+    private string? _formError;
+    private CoursePostFormModel _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _columns = new List<GridColumn<CoursePostGridDto>>
+        {
+            new() { Header = "پست", CellText = cp => string.IsNullOrWhiteSpace(cp.Title) ? cp.PostTitle : $"{cp.Title} ({cp.PostTitle})" },
+            new() { Header = "ترتیب", PropertyName = nameof(CoursePostGridDto.OrderInCourse), Sortable = true, CellText = cp => cp.OrderInCourse.ToString() },
+            new() { Header = "وضعیت", CellTemplate = cp =>
+                @<span class="badge @(cp.IsPublished ? "bg-success" : "bg-secondary")">@(cp.IsPublished ? "نمایش" : "مخفی")</span> },
+        };
+
+        _course = await CourseHandler.Handle(new GetCourseQuery { Id = CourseId }, CancellationToken.None);
+        _posts = await PostsLookup.Handle(new GetPostsForCourseLookupQuery(), CancellationToken.None);
+    }
+
+    private async Task<GridDataSourceResult<CoursePostGridDto>> LoadGridAsync(GridDataSourceRequest request)
+    {
+        var query = new GetCoursePostsGridQuery
+        {
+            CourseId = CourseId,
+            Page = request.Page,
+            PageSize = request.PageSize,
+            InputParams = request.InputParams
+        };
+        return await GridHandler.Handle(query, CancellationToken.None);
+    }
+
+    private void ShowAdd()
+    {
+        _form = new CoursePostFormModel { CourseId = CourseId };
+        _formError = null;
+        _showModal = true;
+    }
+
+    private void ShowEdit(CoursePostGridDto item)
+    {
+        _form = new CoursePostFormModel
+        {
+            Id = item.Id,
+            CourseId = CourseId,
+            PostId = item.PostId,
+            Title = item.Title,
+            Description = item.Description,
+            IsPublished = item.IsPublished,
+            OrderInCourse = item.OrderInCourse
+        };
+        _formError = null;
+        _showModal = true;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_form.PostId == 0)
+        {
+            _formError = "انتخاب پست اجباری است.";
+            return;
+        }
+
+        _saving = true;
+        _formError = null;
+        try
+        {
+            if (_form.Id == 0)
+            {
+                await AddHandler.Handle(new AddPostToCourseCommand
+                {
+                    CourseId = _form.CourseId,
+                    PostId = _form.PostId,
+                    Title = _form.Title,
+                    Description = _form.Description,
+                    IsPublished = _form.IsPublished,
+                    OrderInCourse = _form.OrderInCourse
+                }, CancellationToken.None);
+                _message = "پست به دوره اضافه شد.";
+            }
+            else
+            {
+                await UpdateHandler.Handle(new UpdateCoursePostCommand
+                {
+                    Id = _form.Id,
+                    CourseId = _form.CourseId,
+                    PostId = _form.PostId,
+                    Title = _form.Title,
+                    Description = _form.Description,
+                    IsPublished = _form.IsPublished,
+                    OrderInCourse = _form.OrderInCourse
+                }, CancellationToken.None);
+                _message = "تغییرات ذخیره شد.";
+            }
+
+            _isError = false;
+            _showModal = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task ConfirmRemoveAsync(CoursePostGridDto item)
+    {
+        var label = string.IsNullOrWhiteSpace(item.Title) ? item.PostTitle : item.Title;
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"«{label}» از این دوره حذف شود؟");
+        if (!confirmed) return;
+
+        try
+        {
+            await RemoveHandler.Handle(new RemovePostFromCourseCommand { Id = item.Id }, CancellationToken.None);
+            _message = "پست از دوره حذف شد.";
+            _isError = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+
+    private class CoursePostFormModel
+    {
+        public int Id { get; set; }
+        public int CourseId { get; set; }
+        public int PostId { get; set; }
+        public string? Title { get; set; }
+        public string? Description { get; set; }
+        public bool IsPublished { get; set; } = true;
+        public int OrderInCourse { get; set; }
+    }
+}

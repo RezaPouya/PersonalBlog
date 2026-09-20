@@ -9,5 +9,6 @@ public class GetLatestPostsResult
     public string? CoverImageUrl { get; set; }
     public DateTime? PublishedAt { get; set; }
     public string CategoryTitle { get; set; } = default!;
+    public string CategorySlug { get; set; } = default!;
     public int ViewCount { get; set; }
 }

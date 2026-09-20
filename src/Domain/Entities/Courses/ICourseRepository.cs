@@ -26,4 +26,8 @@ public interface ICourseRepository : IRepository<Course>
 
     Task<List<IdTitleDto<int>>> GetListForLookupAsync(
         CancellationToken cancellationToken);
+
+    Task<List<CourseSiteListDto>> GetPublishedListForSiteAsync(CancellationToken cancellationToken);
+    Task<CourseSiteDetailDto?> GetPublishedBySlugAsync(string slug, CancellationToken cancellationToken);
+    Task<List<SitemapUrlDto>> GetAllPublishedForSitemapAsync(CancellationToken cancellationToken);
 }

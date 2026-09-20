@@ -57,5 +57,29 @@ namespace Infrastructure.Persistence.SqlServer.Repositories
         {
             return await base.DbContext.Categories.AsNoTracking().Where(p => p.Title == title).AnyAsync(cancellationToken);
         }
+
+        public async Task<CategoryDot?> GetBySlugAsync(string slug, CancellationToken cancellationToken)
+        {
+            return await base.DbContext.Categories.AsNoTracking().Where(p => p.Slug == slug).Select(p =>
+                new CategoryDot
+                {
+                    Id = p.Id,
+                    CreatedAt = p.CreatedAt,
+                    Description = p.Description,
+                    IsInEnglish = p.IsInEnglish,
+                    PostsCount = p.Posts.Count(),
+                    Slug = p.Slug,
+                    TinyUrl = p.TinyUrl,
+                    Title = p.Title,
+                    UpdatedAt = p.UpdatedAt,
+                }).FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<List<SitemapUrlDto>> GetAllForSitemapAsync(CancellationToken cancellationToken)
+        {
+            return await base.DbContext.Categories.AsNoTracking()
+                .Select(c => new SitemapUrlDto { Slug = c.Slug, UpdatedAt = c.UpdatedAt })
+                .ToListAsync(cancellationToken);
+        }
     }
 }

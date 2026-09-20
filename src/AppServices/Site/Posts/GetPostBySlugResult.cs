@@ -16,4 +16,5 @@ public class GetPostBySlugResult
     public string? MetaTitle { get; set; }
     public string? MetaDescription { get; set; }
     public List<string> Tags { get; set; } = new();
+    public List<int> TagIds { get; set; } = new();
 }
