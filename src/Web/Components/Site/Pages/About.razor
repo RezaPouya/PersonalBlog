@@ -1,0 +1,182 @@
+@page "/about"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Site.Projects
+@using AppServices.Site.Posts
+@using AppServices.Base
+@using AppServices.Options
+@using Microsoft.Extensions.Options
+@using PersonalBlog.Domain.Entities.Projects.Dtos
+@using Web.Components.Site.Shared
+@inject IQueryHandler<GetProjectsForSiteQuery, List<ProjectSiteDto>> ProjectsHandler
+@inject IQueryHandler<GetPublishedPostsQuery, PersonalBlog.Domain.Entities.Posts.Dtos.PostListPageDto> PostsHandler
+@inject IOptions<SocialLinksSettings> SocialLinksOptions
+
+<SeoHead Title="درباره من" Description="کمی درباره‌ی من و کارهایی که انجام می‌دهم" />
+
+<!-- ============ معرفی ============ -->
+<section class="mb-14">
+    <div class="grid md:grid-cols-[minmax(0,160px)_1fr] gap-8 items-center mb-8">
+        <img src="/uploads/profile/photo.jpg"
+             onerror="this.onerror=null;this.src='/images/avatar-placeholder.svg'"
+             alt="عکس پروفایل"
+             class="w-28 h-28 md:w-full md:h-auto aspect-square object-cover rounded-xl border border-line dark:border-line-dark mx-auto md:mx-0" />
+        <div class="text-center md:text-right">
+            <h1 class="text-2xl md:text-3xl font-bold mb-2">درباره من</h1>
+            <p class="text-fg-muted dark:text-fg-muted-dark font-mono text-sm">[نام شما] — Senior Software Developer</p>
+        </div>
+    </div>
+
+    <div class="space-y-4 leading-8 text-fg-muted dark:text-fg-muted-dark max-w-2xl">
+        <p>
+            این‌جا جای معرفی کامل‌تر شماست — چند پاراگراف درباره‌ی این‌که چه‌کار می‌کنید،
+            چطور به این حرفه رسیدید، و چه چیزی برایتان مهم است. این یک متن نمونه است؛
+            آن را با داستان واقعی خودتان جایگزین کنید.
+        </p>
+        <p>
+            می‌توانید درباره‌ی تجربه‌ی کاری، حوزه‌های موردعلاقه، یا حتی سرگرمی‌های خارج از
+            برنامه‌نویسی بنویسید. صادقانه و کوتاه بهتر از رسمی و طولانی است.
+        </p>
+    </div>
+
+    <div class="flex gap-8 mt-8 pt-6 border-t border-line dark:border-line-dark max-w-2xl">
+        <div>
+            <div class="text-2xl font-bold font-mono">@_yearsOfExperience+</div>
+            <div class="text-xs text-fg-muted dark:text-fg-muted-dark mt-1">سال تجربه</div>
+        </div>
+        <div>
+            <div class="text-2xl font-bold font-mono">@_postsCount</div>
+            <div class="text-xs text-fg-muted dark:text-fg-muted-dark mt-1">مطلب منتشرشده</div>
+        </div>
+        <div>
+            <div class="text-2xl font-bold font-mono">@_projects.Count</div>
+            <div class="text-xs text-fg-muted dark:text-fg-muted-dark mt-1">پروژه</div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ مهارت‌ها ============ -->
+<section class="mb-14">
+    <h2 class="text-xl font-bold mb-5">مهارت‌ها و تکنولوژی‌ها</h2>
+    <div class="flex flex-wrap gap-2 font-mono text-sm">
+        @foreach (var skill in _skills)
+        {
+            <span class="px-3 py-1.5 rounded-lg border border-line dark:border-line-dark text-fg-muted dark:text-fg-muted-dark">
+                @skill
+            </span>
+        }
+    </div>
+    <p class="text-xs text-fg-muted dark:text-fg-muted-dark mt-3">
+        (این لیست را در کد صفحه‌ی درباره‌ی من، متغیر _skills، ویرایش کنید)
+    </p>
+</section>
+
+<!-- ============ نمونه‌کارها ============ -->
+<section class="mb-14">
+    <div class="flex items-baseline justify-between mb-6">
+        <h2 class="text-xl font-bold">نمونه‌کارها</h2>
+        <a href="/projects" class="text-sm font-mono text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">/projects</a>
+    </div>
+
+    @if (_loadingProjects)
+    {
+        <div class="grid sm:grid-cols-2 gap-4">
+            @for (int i = 0; i < 2; i++)
+            {
+                <div class="animate-pulse border border-line dark:border-line-dark rounded-xl p-5">
+                    <div class="h-4 bg-line dark:bg-line-dark rounded w-2/3 mb-3"></div>
+                    <div class="h-3 bg-line dark:bg-line-dark rounded w-full"></div>
+                </div>
+            }
+        </div>
+    }
+    else if (_projects.Count == 0)
+    {
+        <div class="text-center py-12 text-fg-muted dark:text-fg-muted-dark border border-dashed border-line dark:border-line-dark rounded-xl font-mono text-sm">
+            هنوز پروژه‌ای اضافه نشده است.
+        </div>
+    }
+    else
+    {
+        <div class="grid sm:grid-cols-2 gap-4">
+            @foreach (var project in _projects.Take(4))
+            {
+                <div class="border border-line dark:border-line-dark rounded-xl p-5 hover:border-accent dark:hover:border-accent-dark transition">
+                    @if (project.IsFeatured)
+                    {
+                        <div class="text-xs font-mono text-accent dark:text-accent-dark mb-1">ویژه</div>
+                    }
+                    <h3 class="font-semibold mb-2">@project.Title</h3>
+                    <p class="text-sm text-fg-muted dark:text-fg-muted-dark leading-7 line-clamp-2">@project.Description</p>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+<!-- ============ راه‌های ارتباطی ============ -->
+<section>
+    <h2 class="text-xl font-bold mb-5">ارتباط با من</h2>
+    <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm font-mono">
+        @if (!string.IsNullOrWhiteSpace(_social.GitHub))
+        {
+            <a href="@_social.GitHub" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">github</a>
+        }
+        @if (!string.IsNullOrWhiteSpace(_social.LinkedIn))
+        {
+            <a href="@_social.LinkedIn" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">linkedin</a>
+        }
+        @if (!string.IsNullOrWhiteSpace(_social.Telegram))
+        {
+            <a href="@_social.Telegram" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">telegram</a>
+        }
+        @if (!string.IsNullOrWhiteSpace(_social.Twitter))
+        {
+            <a href="@_social.Twitter" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">twitter</a>
+        }
+        <a href="/contact" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">contact form</a>
+    </div>
+</section>
+
+@code {
+    private List<ProjectSiteDto> _projects = new();
+    private bool _loadingProjects = true;
+    private SocialLinksSettings _social = new();
+    private int _postsCount;
+
+    // این عدد را با سال‌های واقعی تجربه‌ی خودتان جایگزین کنید
+    private const int _yearsOfExperience = 5;
+
+    private readonly List<string> _skills = new()
+    {
+        "C#", ".NET / ASP.NET Core", "Blazor", "Entity Framework Core", "SQL Server", "JavaScript"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _social = SocialLinksOptions.Value;
+
+        try
+        {
+            _projects = await ProjectsHandler.Handle(new GetProjectsForSiteQuery(), CancellationToken.None);
+        }
+        catch
+        {
+            _projects = new();
+        }
+        finally
+        {
+            _loadingProjects = false;
+        }
+
+        try
+        {
+            var page = await PostsHandler.Handle(new GetPublishedPostsQuery { Page = 1, PageSize = 1 }, CancellationToken.None);
+            _postsCount = page.Total;
+        }
+        catch
+        {
+            _postsCount = 0;
+        }
+    }
+}

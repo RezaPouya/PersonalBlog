@@ -1,0 +1,47 @@
+@using Microsoft.AspNetCore.Components.Web
+@inject NavigationManager Nav
+
+<PageTitle>@Title</PageTitle>
+<HeadContent>
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <meta name="description" content="@Description" />
+    }
+    <link rel="canonical" href="@Nav.Uri" />
+
+    <meta property="og:type" content="@Type" />
+    <meta property="og:title" content="@Title" />
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <meta property="og:description" content="@Description" />
+    }
+    <meta property="og:url" content="@Nav.Uri" />
+    @if (AbsoluteImageUrl is not null)
+    {
+        <meta property="og:image" content="@AbsoluteImageUrl" />
+        <meta name="twitter:card" content="summary_large_image" />
+    }
+    else
+    {
+        <meta name="twitter:card" content="summary" />
+    }
+    <meta name="twitter:title" content="@Title" />
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <meta name="twitter:description" content="@Description" />
+    }
+</HeadContent>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = default!;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? ImageUrl { get; set; }
+
+    /// <summary>"website" برای صفحات عادی، "article" برای صفحه‌ی پست.</summary>
+    [Parameter] public string Type { get; set; } = "website";
+
+    private string? AbsoluteImageUrl =>
+        string.IsNullOrWhiteSpace(ImageUrl) ? null :
+        ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? ImageUrl :
+        new Uri(new Uri(Nav.BaseUri), ImageUrl).ToString();
+}

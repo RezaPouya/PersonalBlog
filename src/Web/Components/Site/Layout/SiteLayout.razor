@@ -1,12 +1,25 @@
 @inherits LayoutComponentBase
+@using AppServices.Site.Subscriptions
+@using AppServices.Base
 @inject IJSRuntime JS
+@inject ICommandHandler<CreateSubscriptionCommand, int> SubscriptionHandler
 
-<div class="site-wrapper @(_isDark ? "dark" : "")" data-theme="@(_isDark ? "dark" : "light")">
-    <header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
+<div class="site-wrapper min-h-screen bg-bg dark:bg-bg-dark text-fg dark:text-fg-dark transition-colors">
+    <header class="sticky top-0 z-50 bg-bg/90 dark:bg-bg-dark/90 backdrop-blur-md border-b border-line dark:border-line-dark">
         <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="/" class="text-xl font-bold text-sky-600 dark:text-sky-400">وبلاگ شخصی</a>
-            <div class="flex items-center gap-3">
-                <button type="button" @onclick="ToggleTheme" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition" aria-label="تغییر قالب">
+            <a href="/" class="flex items-center gap-1.5 font-mono text-base font-semibold">
+                <span class="text-accent dark:text-accent-dark">&gt;</span>
+                <span>blog</span>
+            </a>
+            <nav class="hidden md:flex items-center gap-6 text-sm">
+                <a href="/posts" class="hover:text-accent dark:hover:text-accent-dark transition">مطالب</a>
+                <a href="/courses" class="hover:text-accent dark:hover:text-accent-dark transition">دوره‌ها</a>
+                <a href="/projects" class="hover:text-accent dark:hover:text-accent-dark transition">پروژه‌ها</a>
+                <a href="/about" class="hover:text-accent dark:hover:text-accent-dark transition">درباره من</a>
+                <a href="/contact" class="px-3 py-1.5 rounded-lg border border-line dark:border-line-dark hover:border-accent dark:hover:border-accent-dark hover:text-accent dark:hover:text-accent-dark transition">تماس</a>
+            </nav>
+            <div class="flex items-center gap-1">
+                <button type="button" @onclick="ToggleTheme" class="p-2 rounded-full hover:bg-fg/5 dark:hover:bg-fg-dark/10 transition text-sm" aria-label="تغییر قالب">
                     @if (_isDark)
                     {
                         <span>☀️</span>
@@ -16,35 +29,81 @@
                         <span>🌙</span>
                     }
                 </button>
-                <button type="button" @onclick="ToggleMenu" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden" aria-label="منو">
+                <button type="button" @onclick="ToggleMenu" class="p-2 rounded-full hover:bg-fg/5 dark:hover:bg-fg-dark/10 md:hidden" aria-label="منو">
                     ☰
                 </button>
             </div>
         </div>
         @if (_menuOpen)
         {
-            <nav class="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 space-y-2">
-                <a href="/" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">خانه</a>
-                <a href="/posts" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">مطالب</a>
-                <a href="/about" class="block py-2 text-gray-700 dark:text-gray-200" @onclick="CloseMenu">درباره من</a>
+            <nav class="md:hidden border-t border-line dark:border-line-dark px-4 py-3 space-y-1 text-sm">
+                <a href="/posts" class="block py-2" @onclick="CloseMenu">مطالب</a>
+                <a href="/courses" class="block py-2" @onclick="CloseMenu">دوره‌ها</a>
+                <a href="/projects" class="block py-2" @onclick="CloseMenu">پروژه‌ها</a>
+                <a href="/about" class="block py-2" @onclick="CloseMenu">درباره من</a>
+                <a href="/contact" class="block py-2" @onclick="CloseMenu">تماس</a>
             </nav>
         }
     </header>
 
-    <main class="max-w-3xl mx-auto px-4 py-6 min-h-[70vh]">
+    <main class="max-w-3xl mx-auto px-4 py-8 min-h-[70vh]">
         @Body
     </main>
 
-    <footer class="border-t border-gray-200 dark:border-gray-700 mt-12 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+    <footer class="border-t border-line dark:border-line-dark mt-12 py-10 text-sm text-fg-muted dark:text-fg-muted-dark">
         <div class="max-w-3xl mx-auto px-4">
-            <p>© @DateTime.Now.Year وبلاگ شخصی — همه حقوق محفوظ است.</p>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pb-6 border-b border-line dark:border-line-dark">
+                <span class="font-mono text-xs">مطالب جدید را در ایمیل‌تان دریافت کنید</span>
+                <form class="flex gap-2 w-full sm:w-auto" @onsubmit="SubscribeAsync">
+                    <input type="email" required placeholder="you@email.com" dir="ltr"
+                           class="flex-grow sm:flex-grow-0 sm:w-56 rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm font-mono"
+                           @bind="_subscribeEmail" />
+                    <button type="submit" class="bg-fg dark:bg-fg-dark text-bg dark:text-bg-dark px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent dark:hover:bg-accent-dark transition shrink-0" disabled="@_subscribing">
+                        عضویت
+                    </button>
+                </form>
+            </div>
+            @if (!string.IsNullOrEmpty(_subscribeMessage))
+            {
+                <p class="text-center text-xs mb-4 @(_subscribeError ? "text-red-500" : "text-accent2 dark:text-accent2-dark")">@_subscribeMessage</p>
+            }
+            <p class="text-center font-mono text-xs">© @DateTime.Now.Year blog — همه حقوق محفوظ است.</p>
         </div>
     </footer>
 </div>
 
 @code {
-    private bool _isDark;
+    // پیش‌فرض سایت قالب تیره است (هماهنگ با اسکریپت ابتدای App.razor که پیش از رندر اجرا می‌شود).
+    private bool _isDark = true;
     private bool _menuOpen;
+    private string? _subscribeEmail;
+    private bool _subscribing;
+    private string? _subscribeMessage;
+    private bool _subscribeError;
+
+    private async Task SubscribeAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_subscribeEmail)) return;
+
+        _subscribing = true;
+        _subscribeMessage = null;
+        try
+        {
+            await SubscriptionHandler.Handle(new CreateSubscriptionCommand { Email = _subscribeEmail }, CancellationToken.None);
+            _subscribeMessage = "عضویت شما ثبت شد. ممنون!";
+            _subscribeError = false;
+            _subscribeEmail = null;
+        }
+        catch (Exception ex)
+        {
+            _subscribeMessage = ex.Message;
+            _subscribeError = true;
+        }
+        finally
+        {
+            _subscribing = false;
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -52,9 +111,8 @@
         {
             try
             {
-                var theme = await JS.InvokeAsync<string>("eval", "localStorage.getItem('theme') || 'light'");
-                _isDark = theme == "dark";
-                await ApplyThemeClass();
+                var theme = await JS.InvokeAsync<string>("eval", "localStorage.getItem('theme') || 'dark'");
+                _isDark = theme != "light";
                 StateHasChanged();
             }
             catch { }
@@ -65,11 +123,6 @@
     {
         _isDark = !_isDark;
         await JS.InvokeVoidAsync("eval", $"localStorage.setItem('theme', '{(_isDark ? "dark" : "light")}')");
-        await ApplyThemeClass();
-    }
-
-    private async Task ApplyThemeClass()
-    {
         await JS.InvokeVoidAsync("eval", _isDark
             ? "document.documentElement.classList.add('dark')"
             : "document.documentElement.classList.remove('dark')");

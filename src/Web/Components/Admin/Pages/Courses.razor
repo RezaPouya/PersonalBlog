@@ -1,0 +1,239 @@
+@page "/admin/courses"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.Courses.Grid
+@using AppServices.Admin.Courses.Create
+@using AppServices.Admin.Courses.Update
+@using AppServices.Admin.Courses.Delete
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Courses.Dtos
+@using Utilities.Dtos
+@using Web.Components.Admin.Shared
+@inject IQueryHandler<GetCourseListAsGridQuery, GridDataSourceResult<CourseGridDto>> GridHandler
+@inject ICommandHandler<CreateCourseCommand, int> CreateHandler
+@inject ICommandHandler<UpdateCourseCommand, int> UpdateHandler
+@inject ICommandHandler<DeleteCourseCommand, int> DeleteHandler
+@inject IJSRuntime JS
+
+<PageTitle>دوره‌ها | ادمین</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">مدیریت دوره‌ها</h1>
+    <button class="btn btn-success" @onclick="ShowCreate">+ دوره جدید</button>
+</div>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+    </div>
+}
+
+<DynamicGrid @ref="_grid" TItem="CourseGridDto" PageSize="15" Columns="_columns" LoadData="LoadGridAsync">
+    <RowActions Context="item">
+        <a class="btn btn-sm btn-outline-secondary" href="/admin/course-posts/@item.Id">مطالب دوره</a>
+        <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEdit(item)">ویرایش</button>
+        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteAsync(item)">حذف</button>
+    </RowActions>
+</DynamicGrid>
+
+@if (_showModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_form.Id == 0 ? "دوره جدید" : "ویرایش دوره")</h5>
+                        <button type="button" class="btn-close" @onclick="() => _showModal = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(_formError))
+                        {
+                            <div class="alert alert-danger">@_formError</div>
+                        }
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">عنوان *</label>
+                                <InputText class="form-control" @bind-Value="_form.Title" />
+                                <ValidationMessage For="() => _form.Title" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">اسلاگ *</label>
+                                <InputText class="form-control" dir="ltr" @bind-Value="_form.Slug" />
+                                <ValidationMessage For="() => _form.Slug" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">توضیحات</label>
+                                <InputTextArea class="form-control" rows="3" @bind-Value="_form.Description" />
+                            </div>
+                            <div class="col-md-6">
+                                <ImageUploader Label="تصویر کاور" SubFolder="courses" @bind-Value="_form.CoverImageUrl" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">ترتیب نمایش</label>
+                                <InputNumber class="form-control" @bind-Value="_form.OrderInCourses" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-check-inline">
+                                    <InputCheckbox class="form-check-input" id="crsPub" @bind-Value="_form.IsPublished" />
+                                    <label class="form-check-label" for="crsPub">منتشر شود</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <InputCheckbox class="form-check-input" id="crsEn" @bind-Value="_form.IsInEnglish" />
+                                    <label class="form-check-label" for="crsEn">انگلیسی است؟</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" @onclick="() => _showModal = false">انصراف</button>
+                        <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "در حال ذخیره..." : "ذخیره")</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DynamicGrid<CourseGridDto>? _grid;
+    private List<GridColumn<CourseGridDto>> _columns = new();
+    private string? _message;
+    private bool _isError;
+    private bool _showModal;
+    private bool _saving;
+    private string? _formError;
+    private CourseFormModel _form = new();
+
+    protected override void OnInitialized()
+    {
+        _columns = new List<GridColumn<CourseGridDto>>
+        {
+            new() { Header = "شناسه", PropertyName = nameof(CourseGridDto.Id), Sortable = true, Width = "70px", CellText = c => c.Id.ToString() },
+            new() { Header = "عنوان", PropertyName = nameof(CourseGridDto.Title), Sortable = true, Filterable = true, CellText = c => c.Title },
+            new() { Header = "تعداد مطلب", PropertyName = nameof(CourseGridDto.PostsCount), Sortable = true, CellText = c => c.PostsCount.ToString() },
+            new() { Header = "وضعیت", CellTemplate = c =>
+                @<span class="badge @(c.IsPublished ? "bg-success" : "bg-secondary")">@(c.IsPublished ? "منتشر شده" : "پیش‌نویس")</span> },
+            new() { Header = "ترتیب", PropertyName = nameof(CourseGridDto.OrderInCourses), Sortable = true, CellText = c => c.OrderInCourses.ToString() },
+        };
+    }
+
+    private async Task<GridDataSourceResult<CourseGridDto>> LoadGridAsync(GridDataSourceRequest request)
+    {
+        var query = new GetCourseListAsGridQuery { Page = request.Page, PageSize = request.PageSize, InputParams = request.InputParams };
+        return await GridHandler.Handle(query, CancellationToken.None);
+    }
+
+    private void ShowCreate()
+    {
+        _form = new CourseFormModel();
+        _formError = null;
+        _showModal = true;
+    }
+
+    private void ShowEdit(CourseGridDto item)
+    {
+        _form = new CourseFormModel
+        {
+            Id = item.Id,
+            Title = item.Title,
+            Slug = item.Slug,
+            Description = item.Description,
+            CoverImageUrl = item.CoverImageUrl,
+            IsPublished = item.IsPublished,
+            IsInEnglish = item.IsInEnglish,
+            OrderInCourses = item.OrderInCourses
+        };
+        _formError = null;
+        _showModal = true;
+    }
+
+    private async Task SubmitAsync()
+    {
+        _saving = true;
+        _formError = null;
+        try
+        {
+            if (_form.Id == 0)
+            {
+                await CreateHandler.Handle(new CreateCourseCommand
+                {
+                    Title = _form.Title,
+                    Slug = _form.Slug,
+                    Description = _form.Description,
+                    CoverImageUrl = _form.CoverImageUrl,
+                    IsPublished = _form.IsPublished,
+                    IsInEnglish = _form.IsInEnglish,
+                    OrderInCourses = _form.OrderInCourses
+                }, CancellationToken.None);
+                _message = "دوره ایجاد شد.";
+            }
+            else
+            {
+                await UpdateHandler.Handle(new UpdateCourseCommand
+                {
+                    Id = _form.Id,
+                    Title = _form.Title,
+                    Slug = _form.Slug,
+                    Description = _form.Description,
+                    CoverImageUrl = _form.CoverImageUrl,
+                    IsPublished = _form.IsPublished,
+                    IsInEnglish = _form.IsInEnglish,
+                    OrderInCourses = _form.OrderInCourses
+                }, CancellationToken.None);
+                _message = "تغییرات ذخیره شد.";
+            }
+
+            _isError = false;
+            _showModal = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(CourseGridDto item)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"دوره «{item.Title}» حذف شود؟");
+        if (!confirmed) return;
+
+        try
+        {
+            await DeleteHandler.Handle(new DeleteCourseCommand { Id = item.Id }, CancellationToken.None);
+            _message = $"دوره «{item.Title}» حذف شد.";
+            _isError = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+
+    private class CourseFormModel
+    {
+        public int Id { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "عنوان اجباری است")]
+        public string Title { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "اسلاگ اجباری است")]
+        public string Slug { get; set; } = "";
+
+        public string? Description { get; set; }
+        public string? CoverImageUrl { get; set; }
+        public bool IsPublished { get; set; }
+        public bool IsInEnglish { get; set; }
+        public int OrderInCourses { get; set; }
+    }
+}

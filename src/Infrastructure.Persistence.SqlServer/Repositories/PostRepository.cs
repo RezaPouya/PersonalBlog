@@ -8,6 +8,14 @@ namespace Infrastructure.Persistence.SqlServer.Repositories;
 
 public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbContext), IPostRepository
 {
+    public async Task<List<IdTitleDto<int>>> GetListForLookupAsync(CancellationToken cancellationToken)
+    {
+        return await base.DbContext.Posts.AsNoTracking()
+            .OrderByDescending(p => p.CreatedAt)
+            .Select(p => new IdTitleDto<int> { Id = p.Id, Title = p.Title })
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<bool> DoesCategoryHaveAnyPost(int categoryId, CancellationToken cancellationToken)
     {
         var result = await base.DbContext.Posts.AsNoTracking()
@@ -116,5 +124,136 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
                     TagId = tagId
                 });
         }
+    }
+
+    // ============================ سمت سایت عمومی ============================
+
+    public async Task<List<PostSummaryDto>> GetLatestPublishedAsync(int count, bool? isInEnglish, CancellationToken cancellationToken)
+    {
+        var query = base.DbContext.Posts.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.IsPublished);
+
+        if (isInEnglish.HasValue)
+            query = query.Where(p => p.IsInEnglish == isInEnglish.Value);
+
+        return await query
+            .OrderByDescending(p => p.PublishedAt ?? p.CreatedAt)
+            .Take(count)
+            .Select(p => new PostSummaryDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Slug = p.Slug,
+                Summary = p.Summary,
+                CoverImageUrl = p.CoverImageUrl,
+                PublishedAt = p.PublishedAt,
+                CategoryTitle = p.Category.Title,
+                CategorySlug = p.Category.Slug,
+                ViewCount = p.ViewCount
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<PostSiteDetailDto?> GetPublishedBySlugAsync(string slug, CancellationToken cancellationToken)
+    {
+        return await base.DbContext.Posts.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.IsPublished && p.Slug == slug)
+            .Select(p => new PostSiteDetailDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Slug = p.Slug,
+                Summary = p.Summary,
+                Content = p.Content,
+                CoverImageUrl = p.CoverImageUrl,
+                PublishedAt = p.PublishedAt,
+                CategoryTitle = p.Category.Title,
+                CategorySlug = p.Category.Slug,
+                ViewCount = p.ViewCount,
+                IsCommentsEnabled = p.IsCommentsEnabled,
+                MetaTitle = p.MetaTitle,
+                MetaDescription = p.MetaDescription,
+                Tags = p.PostTags.OrderBy(pt => pt.TagId).Select(pt => pt.Tag.Title).ToList(),
+                TagIds = p.PostTags.OrderBy(pt => pt.TagId).Select(pt => pt.TagId).ToList()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<PostListPageDto> GetPublishedListAsync(int page, int pageSize, int? categoryId, int? tagId, CancellationToken cancellationToken)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+
+        var query = base.DbContext.Posts.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.IsPublished);
+
+        if (categoryId.HasValue)
+            query = query.Where(p => p.CategoryId == categoryId.Value);
+
+        if (tagId.HasValue)
+            query = query.Where(p => p.PostTags.Any(pt => pt.TagId == tagId.Value));
+
+        var total = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderByDescending(p => p.PublishedAt ?? p.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => new PostSummaryDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Slug = p.Slug,
+                Summary = p.Summary,
+                CoverImageUrl = p.CoverImageUrl,
+                PublishedAt = p.PublishedAt,
+                CategoryTitle = p.Category.Title,
+                CategorySlug = p.Category.Slug,
+                ViewCount = p.ViewCount
+            })
+            .ToListAsync(cancellationToken);
+
+        return new PostListPageDto { Items = items, Page = page, PageSize = pageSize, Total = total };
+    }
+
+    public async Task IncrementViewCountAsync(int postId, CancellationToken cancellationToken)
+    {
+        // آپدیت مستقیم و اتمیک، بدون نیاز به لود کردن کل موجودیت.
+        await base.DbContext.Posts
+            .Where(p => p.Id == postId)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(p => p.ViewCount, p => p.ViewCount + 1), cancellationToken);
+    }
+
+    public async Task<List<SitemapUrlDto>> GetAllPublishedForSitemapAsync(CancellationToken cancellationToken)
+    {
+        return await base.DbContext.Posts.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.IsPublished)
+            .Select(p => new SitemapUrlDto
+            {
+                Slug = p.Slug,
+                UpdatedAt = p.UpdatedAt
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<PostSummaryDto>> GetLatestForFeedAsync(int count, CancellationToken cancellationToken)
+    {
+        return await base.DbContext.Posts.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.IsPublished)
+            .OrderByDescending(p => p.PublishedAt ?? p.CreatedAt)
+            .Take(count)
+            .Select(p => new PostSummaryDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Slug = p.Slug,
+                Summary = p.Summary,
+                CoverImageUrl = p.CoverImageUrl,
+                PublishedAt = p.PublishedAt,
+                CategoryTitle = p.Category.Title,
+                CategorySlug = p.Category.Slug,
+                ViewCount = p.ViewCount
+            })
+            .ToListAsync(cancellationToken);
     }
 }

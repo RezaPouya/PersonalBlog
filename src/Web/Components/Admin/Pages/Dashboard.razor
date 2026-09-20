@@ -2,20 +2,90 @@
 @page "/admin/dashboard"
 @layout Web.Components.Admin.Layout.AdminLayout
 @rendermode InteractiveServer
+@using AppServices.Admin.Dashboard
+@using AppServices.Base
+@inject IQueryHandler<GetDashboardStatsQuery, DashboardStatsDto> StatsHandler
 
 <PageTitle>داشبورد | ادمین</PageTitle>
 
 <h1 class="mb-4">داشبورد مدیریت</h1>
-<div class="row g-3">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">دسته‌بندی‌ها</h5>
-                <p class="card-text text-muted">مدیریت دسته‌بندی‌های مطالب</p>
-                <a href="/admin/categories" class="btn btn-primary btn-sm">مشاهده</a>
+
+@if (_stats is null)
+{
+    <div class="text-muted">در حال بارگذاری آمار...</div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6">@_stats.PostsCount</div>
+                    <div class="text-muted small">مطالب</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6">@_stats.CategoriesCount</div>
+                    <div class="text-muted small">دسته‌بندی</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6">@_stats.TagsCount</div>
+                    <div class="text-muted small">برچسب</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6">@_stats.CoursesCount</div>
+                    <div class="text-muted small">دوره</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6">@_stats.ProjectsCount</div>
+                    <div class="text-muted small">پروژه</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <div class="display-6 text-warning">@_stats.PendingCommentsCount</div>
+                    <div class="text-muted small">کامنت در انتظار</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <div class="display-6 text-primary">@_stats.UnreadMessagesCount</div>
+                    <div class="text-muted small">پیام خوانده‌نشده</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6">@_stats.ActiveSubscribersCount</div>
+                    <div class="text-muted small">مشترک فعال</div>
+                </div>
             </div>
         </div>
     </div>
+}
+
+<h2 class="h5 mb-3">دسترسی سریع</h2>
+<div class="row g-3">
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
@@ -28,10 +98,62 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
+                <h5 class="card-title">دسته‌بندی‌ها</h5>
+                <p class="card-text text-muted">مدیریت دسته‌بندی‌های مطالب</p>
+                <a href="/admin/categories" class="btn btn-primary btn-sm">مشاهده</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
                 <h5 class="card-title">برچسب‌ها</h5>
                 <p class="card-text text-muted">مدیریت تگ‌ها</p>
                 <a href="/admin/tags" class="btn btn-primary btn-sm">مشاهده</a>
             </div>
         </div>
     </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">دوره‌ها</h5>
+                <p class="card-text text-muted">مدیریت دوره‌های آموزشی</p>
+                <a href="/admin/courses" class="btn btn-primary btn-sm">مشاهده</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">پروژه‌ها</h5>
+                <p class="card-text text-muted">نمونه‌کارها</p>
+                <a href="/admin/projects" class="btn btn-primary btn-sm">مشاهده</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">کامنت‌ها</h5>
+                <p class="card-text text-muted">تأیید و مدیریت نظرات</p>
+                <a href="/admin/comments" class="btn btn-primary btn-sm">مشاهده</a>
+            </div>
+        </div>
+    </div>
 </div>
+
+@code {
+    private DashboardStatsDto? _stats;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _stats = await StatsHandler.Handle(new GetDashboardStatsQuery(), CancellationToken.None);
+        }
+        catch
+        {
+            // اگر آمار به هر دلیلی گرفته نشد، صفحه با کارت‌های دسترسی سریع همچنان قابل استفاده بماند.
+        }
+    }
+}
