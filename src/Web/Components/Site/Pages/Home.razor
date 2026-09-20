@@ -4,6 +4,7 @@
 @rendermode InteractiveServer
 @using AppServices.Site.Posts
 @using AppServices.Base
+<<<<<<< HEAD
 @using AppServices.Site.Projects
 @using AppServices.Options
 @using Microsoft.Extensions.Options
@@ -13,9 +14,16 @@
 @inject IQueryHandler<GetLatestPostsQuery, List<GetLatestPostsResult>> LatestPostsHandler
 @inject IQueryHandler<GetProjectsForSiteQuery, List<ProjectSiteDto>> ProjectsHandler
 @inject IOptions<SiteSettings> SiteSettingsOptions
+=======
+@using AppServices.Options
+@using Microsoft.Extensions.Options
+@inject IQueryHandler<GetLatestPostsQuery, List<GetLatestPostsResult>> LatestPostsHandler
+@inject IOptions<SocialLinksSettings> SocialLinksOptions
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 
 <SeoHead Title="@_site.Title" Description="@_site.Description" />
 
+<<<<<<< HEAD
 <!-- ============ نوار معرفی کوتاه ============ -->
 <section class="flex items-center gap-3 mb-10 pb-6 border-b border-line dark:border-line-dark">
     <img src="/uploads/profile/photo.jpg"
@@ -45,6 +53,108 @@
         </div>
     </a>
 }
+=======
+<!-- ============ بخش معرفی (Hero) ============ -->
+<section class="mb-16 md:mb-20">
+    <div class="grid md:grid-cols-[minmax(0,220px)_1fr] gap-8 md:gap-12 items-center">
+
+        <!-- عکس پروفایل با قاب دوتایی؛ کارت طلایی پشت، عکس روی آن -->
+        <div class="relative w-40 h-40 md:w-full md:h-auto mx-auto md:mx-0 shrink-0">
+            <div class="absolute inset-0 rounded-2xl bg-gold dark:bg-gold-dark rotate-[-4deg]"></div>
+            <img src="/uploads/profile/photo.jpg"
+                 onerror="this.onerror=null;this.src='/images/avatar-placeholder.svg'"
+                 alt="عکس پروفایل"
+                 class="relative w-full aspect-square object-cover rounded-2xl border border-line dark:border-line-dark" />
+        </div>
+
+        <!-- متن درباره من -->
+        <div class="text-center md:text-right">
+            <h1 class="text-3xl md:text-4xl font-bold leading-tight mb-3">
+                سلام، من [نام شما] هستم
+            </h1>
+            <p class="text-ink-soft dark:text-ink-softdark leading-8 max-w-lg mx-auto md:mx-0 mb-5">
+                برنامه‌نویس و علاقه‌مند به یادگیری و نوشتن درباره‌ی چیزهایی که یاد می‌گیرم.
+                این‌جا نوشته‌ها، دوره‌ها و پروژه‌هایی که روی‌شان کار کرده‌ام را می‌گذارم —
+                یک متن کوتاه و واقعی درباره‌ی خودتان را همین‌جا جایگزین کنید.
+            </p>
+
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-2 mb-6 text-sm">
+                @if (!string.IsNullOrWhiteSpace(_social.GitHub))
+                {
+                    <a href="@_social.GitHub" target="_blank" rel="noopener" class="border-b border-transparent hover:border-gold dark:hover:border-gold-dark hover:text-gold dark:hover:text-gold-dark transition">گیت‌هاب</a>
+                }
+                @if (!string.IsNullOrWhiteSpace(_social.LinkedIn))
+                {
+                    <a href="@_social.LinkedIn" target="_blank" rel="noopener" class="border-b border-transparent hover:border-gold dark:hover:border-gold-dark hover:text-gold dark:hover:text-gold-dark transition">لینکدین</a>
+                }
+                @if (!string.IsNullOrWhiteSpace(_social.Telegram))
+                {
+                    <a href="@_social.Telegram" target="_blank" rel="noopener" class="border-b border-transparent hover:border-gold dark:hover:border-gold-dark hover:text-gold dark:hover:text-gold-dark transition">تلگرام</a>
+                }
+                @if (!string.IsNullOrWhiteSpace(_social.Twitter))
+                {
+                    <a href="@_social.Twitter" target="_blank" rel="noopener" class="border-b border-transparent hover:border-gold dark:hover:border-gold-dark hover:text-gold dark:hover:text-gold-dark transition">توییتر</a>
+                }
+            </div>
+
+            <a href="/posts" class="inline-block bg-ink dark:bg-ink-dark text-paper dark:text-paper-dark px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-teal dark:hover:bg-teal-dark transition">
+                خواندن مطالب
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ============ آخرین مطالب ============ -->
+<section>
+    <div class="flex items-baseline justify-between mb-6">
+        <h2 class="text-xl font-bold">آخرین مطالب</h2>
+        <a href="/posts" class="text-sm text-teal dark:text-teal-dark hover:text-gold dark:hover:text-gold-dark transition">همه‌ی مطالب</a>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="divide-y divide-line dark:divide-line-dark">
+            @for (int i = 0; i < 3; i++)
+            {
+                <div class="animate-pulse py-6">
+                    <div class="h-3 bg-line dark:bg-line-dark rounded w-24 mb-3"></div>
+                    <div class="h-5 bg-line dark:bg-line-dark rounded w-3/4 mb-3"></div>
+                    <div class="h-3 bg-line dark:bg-line-dark rounded w-full"></div>
+                </div>
+            }
+        </div>
+    }
+    else if (_posts.Count == 0)
+    {
+        <div class="text-center py-16 text-ink-soft dark:text-ink-softdark border border-dashed border-line dark:border-line-dark rounded-2xl">
+            هنوز مطلبی منتشر نشده است.
+        </div>
+    }
+    else
+    {
+        <div class="divide-y divide-line dark:divide-line-dark">
+            @foreach (var post in _posts)
+            {
+                <article class="py-6 first:pt-0">
+                    <a href="/post/@post.Slug" class="group block">
+                        <div class="flex items-center gap-3 text-xs text-ink-soft dark:text-ink-softdark mb-2">
+                            <span class="text-teal dark:text-teal-dark font-medium">@post.CategoryTitle</span>
+                            @if (post.PublishedAt.HasValue)
+                            {
+                                <span>@post.PublishedAt.Value.ToString("yyyy/MM/dd")</span>
+                            }
+                        </div>
+                        <h3 class="text-lg font-semibold leading-snug mb-2 group-hover:text-gold dark:group-hover:text-gold-dark transition">
+                            @post.Title
+                        </h3>
+                        <p class="text-sm text-ink-soft dark:text-ink-softdark line-clamp-2 leading-7">@post.Summary</p>
+                    </a>
+                </article>
+            }
+        </div>
+    }
+</section>
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 
 <!-- ============ آخرین مطالب ============ -->
 <section>
@@ -61,11 +171,19 @@
     private List<PostSummaryDto> _posts = new();
     private ProjectSiteDto? _featuredProject;
     private bool _loading = true;
+<<<<<<< HEAD
     private SiteSettings _site = new();
 
     protected override async Task OnInitializedAsync()
     {
         _site = SiteSettingsOptions.Value;
+=======
+    private SocialLinksSettings _social = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _social = SocialLinksOptions.Value;
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 
         try
         {

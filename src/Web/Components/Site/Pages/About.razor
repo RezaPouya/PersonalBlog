@@ -2,11 +2,15 @@
 @layout Web.Components.Site.Layout.SiteLayout
 @rendermode InteractiveServer
 @using AppServices.Site.Projects
+<<<<<<< HEAD
 @using AppServices.Site.Posts
+=======
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 @using AppServices.Base
 @using AppServices.Options
 @using Microsoft.Extensions.Options
 @using PersonalBlog.Domain.Entities.Projects.Dtos
+<<<<<<< HEAD
 @using Web.Components.Site.Shared
 @inject IQueryHandler<GetProjectsForSiteQuery, List<ProjectSiteDto>> ProjectsHandler
 @inject IQueryHandler<GetPublishedPostsQuery, PersonalBlog.Domain.Entities.Posts.Dtos.PostListPageDto> PostsHandler
@@ -28,6 +32,30 @@
     </div>
 
     <div class="space-y-4 leading-8 text-fg-muted dark:text-fg-muted-dark max-w-2xl">
+=======
+@inject IQueryHandler<GetProjectsForSiteQuery, List<ProjectSiteDto>> ProjectsHandler
+@inject IOptions<SocialLinksSettings> SocialLinksOptions
+
+<PageTitle>درباره من | وبلاگ شخصی</PageTitle>
+
+<!-- ============ معرفی ============ -->
+<section class="mb-14">
+    <div class="grid md:grid-cols-[minmax(0,180px)_1fr] gap-8 items-center mb-8">
+        <div class="relative w-32 h-32 md:w-full md:h-auto mx-auto md:mx-0 shrink-0">
+            <div class="absolute inset-0 rounded-2xl bg-gold dark:bg-gold-dark rotate-[-4deg]"></div>
+            <img src="/uploads/profile/photo.jpg"
+                 onerror="this.onerror=null;this.src='/images/avatar-placeholder.svg'"
+                 alt="عکس پروفایل"
+                 class="relative w-full aspect-square object-cover rounded-2xl border border-line dark:border-line-dark" />
+        </div>
+        <div class="text-center md:text-right">
+            <h1 class="text-2xl md:text-3xl font-bold mb-2">درباره من</h1>
+            <p class="text-ink-soft dark:text-ink-softdark">[نام شما] — برنامه‌نویس</p>
+        </div>
+    </div>
+
+    <div class="space-y-4 leading-8 text-ink-soft dark:text-ink-softdark max-w-2xl">
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
         <p>
             این‌جا جای معرفی کامل‌تر شماست — چند پاراگراف درباره‌ی این‌که چه‌کار می‌کنید،
             چطور به این حرفه رسیدید، و چه چیزی برایتان مهم است. این یک متن نمونه است؛
@@ -38,6 +66,7 @@
             برنامه‌نویسی بنویسید. صادقانه و کوتاه بهتر از رسمی و طولانی است.
         </p>
     </div>
+<<<<<<< HEAD
 
     <div class="flex gap-8 mt-8 pt-6 border-t border-line dark:border-line-dark max-w-2xl">
         <div>
@@ -53,20 +82,33 @@
             <div class="text-xs text-fg-muted dark:text-fg-muted-dark mt-1">پروژه</div>
         </div>
     </div>
+=======
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 </section>
 
 <!-- ============ مهارت‌ها ============ -->
 <section class="mb-14">
     <h2 class="text-xl font-bold mb-5">مهارت‌ها و تکنولوژی‌ها</h2>
+<<<<<<< HEAD
     <div class="flex flex-wrap gap-2 font-mono text-sm">
         @foreach (var skill in _skills)
         {
             <span class="px-3 py-1.5 rounded-lg border border-line dark:border-line-dark text-fg-muted dark:text-fg-muted-dark">
+=======
+    <div class="flex flex-wrap gap-2">
+        @foreach (var skill in _skills)
+        {
+            <span class="px-3 py-1.5 text-sm rounded-lg border border-line dark:border-line-dark text-ink-soft dark:text-ink-softdark">
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
                 @skill
             </span>
         }
     </div>
+<<<<<<< HEAD
     <p class="text-xs text-fg-muted dark:text-fg-muted-dark mt-3">
+=======
+    <p class="text-xs text-ink-soft dark:text-ink-softdark mt-3">
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
         (این لیست را در کد صفحه‌ی درباره‌ی من، متغیر _skills، ویرایش کنید)
     </p>
 </section>
@@ -75,7 +117,10 @@
 <section class="mb-14">
     <div class="flex items-baseline justify-between mb-6">
         <h2 class="text-xl font-bold">نمونه‌کارها</h2>
+<<<<<<< HEAD
         <a href="/projects" class="text-sm font-mono text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">/projects</a>
+=======
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
     </div>
 
     @if (_loadingProjects)
@@ -83,7 +128,11 @@
         <div class="grid sm:grid-cols-2 gap-4">
             @for (int i = 0; i < 2; i++)
             {
+<<<<<<< HEAD
                 <div class="animate-pulse border border-line dark:border-line-dark rounded-xl p-5">
+=======
+                <div class="animate-pulse border border-line dark:border-line-dark rounded-2xl p-5">
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
                     <div class="h-4 bg-line dark:bg-line-dark rounded w-2/3 mb-3"></div>
                     <div class="h-3 bg-line dark:bg-line-dark rounded w-full"></div>
                 </div>
@@ -92,13 +141,20 @@
     }
     else if (_projects.Count == 0)
     {
+<<<<<<< HEAD
         <div class="text-center py-12 text-fg-muted dark:text-fg-muted-dark border border-dashed border-line dark:border-line-dark rounded-xl font-mono text-sm">
             هنوز پروژه‌ای اضافه نشده است.
+=======
+        <div class="text-center py-12 text-ink-soft dark:text-ink-softdark border border-dashed border-line dark:border-line-dark rounded-2xl">
+            هنوز پروژه‌ای اضافه نشده است.
+            <div class="text-xs mt-1">(از پنل ادمین → پروژه‌ها اضافه کنید)</div>
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
         </div>
     }
     else
     {
         <div class="grid sm:grid-cols-2 gap-4">
+<<<<<<< HEAD
             @foreach (var project in _projects.Take(4))
             {
                 <div class="border border-line dark:border-line-dark rounded-xl p-5 hover:border-accent dark:hover:border-accent-dark transition">
@@ -108,6 +164,38 @@
                     }
                     <h3 class="font-semibold mb-2">@project.Title</h3>
                     <p class="text-sm text-fg-muted dark:text-fg-muted-dark leading-7 line-clamp-2">@project.Description</p>
+=======
+            @foreach (var project in _projects)
+            {
+                <div class="border border-line dark:border-line-dark rounded-2xl p-5 hover:border-gold dark:hover:border-gold-dark transition">
+                    @if (project.IsFeatured)
+                    {
+                        <div class="text-xs text-gold dark:text-gold-dark font-medium mb-1">پروژه‌ی ویژه</div>
+                    }
+                    <h3 class="font-semibold mb-2">@project.Title</h3>
+                    <p class="text-sm text-ink-soft dark:text-ink-softdark leading-7 mb-3 line-clamp-2">@project.Description</p>
+
+                    @if (!string.IsNullOrWhiteSpace(project.TechnologiesCsv))
+                    {
+                        <div class="flex flex-wrap gap-1.5 mb-3">
+                            @foreach (var tech in project.TechnologiesCsv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                            {
+                                <span class="text-xs text-teal dark:text-teal-dark">@tech</span>
+                            }
+                        </div>
+                    }
+
+                    <div class="flex gap-4 text-sm">
+                        @if (!string.IsNullOrWhiteSpace(project.LiveUrl))
+                        {
+                            <a href="@project.LiveUrl" target="_blank" rel="noopener" class="text-teal dark:text-teal-dark hover:text-gold dark:hover:text-gold-dark transition">نسخه‌ی زنده</a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(project.RepoUrl))
+                        {
+                            <a href="@project.RepoUrl" target="_blank" rel="noopener" class="text-teal dark:text-teal-dark hover:text-gold dark:hover:text-gold-dark transition">مخزن کد</a>
+                        }
+                    </div>
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
                 </div>
             }
         </div>
@@ -117,6 +205,7 @@
 <!-- ============ راه‌های ارتباطی ============ -->
 <section>
     <h2 class="text-xl font-bold mb-5">ارتباط با من</h2>
+<<<<<<< HEAD
     <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm font-mono">
         @if (!string.IsNullOrWhiteSpace(_social.GitHub))
         {
@@ -135,6 +224,25 @@
             <a href="@_social.Twitter" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">twitter</a>
         }
         <a href="/contact" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">contact form</a>
+=======
+    <div class="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+        @if (!string.IsNullOrWhiteSpace(_social.GitHub))
+        {
+            <a href="@_social.GitHub" target="_blank" rel="noopener" class="border-b border-transparent hover:border-gold dark:hover:border-gold-dark hover:text-gold dark:hover:text-gold-dark transition">گیت‌هاب</a>
+        }
+        @if (!string.IsNullOrWhiteSpace(_social.LinkedIn))
+        {
+            <a href="@_social.LinkedIn" target="_blank" rel="noopener" class="border-b border-transparent hover:border-gold dark:hover:border-gold-dark hover:text-gold dark:hover:text-gold-dark transition">لینکدین</a>
+        }
+        @if (!string.IsNullOrWhiteSpace(_social.Telegram))
+        {
+            <a href="@_social.Telegram" target="_blank" rel="noopener" class="border-b border-transparent hover:border-gold dark:hover:border-gold-dark hover:text-gold dark:hover:text-gold-dark transition">تلگرام</a>
+        }
+        @if (!string.IsNullOrWhiteSpace(_social.Twitter))
+        {
+            <a href="@_social.Twitter" target="_blank" rel="noopener" class="border-b border-transparent hover:border-gold dark:hover:border-gold-dark hover:text-gold dark:hover:text-gold-dark transition">توییتر</a>
+        }
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
     </div>
 </section>
 
@@ -142,11 +250,16 @@
     private List<ProjectSiteDto> _projects = new();
     private bool _loadingProjects = true;
     private SocialLinksSettings _social = new();
+<<<<<<< HEAD
     private int _postsCount;
 
     // این عدد را با سال‌های واقعی تجربه‌ی خودتان جایگزین کنید
     private const int _yearsOfExperience = 5;
 
+=======
+
+    // این لیست را با مهارت‌های واقعی خودتان جایگزین کنید
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
     private readonly List<string> _skills = new()
     {
         "C#", ".NET / ASP.NET Core", "Blazor", "Entity Framework Core", "SQL Server", "JavaScript"
@@ -168,6 +281,7 @@
         {
             _loadingProjects = false;
         }
+<<<<<<< HEAD
 
         try
         {
@@ -178,5 +292,7 @@
         {
             _postsCount = 0;
         }
+=======
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
     }
 }

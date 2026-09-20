@@ -21,6 +21,7 @@ public class PostDto
     public int ViewCount { get; set; }
     public int CategoryId { get; set; }
     public string CategoryTitle { get; set; } = default!;
+    public string CategorySlug { get; set; } = default!;
 
     // SEO
     public string? MetaTitle { get; set; }
@@ -34,6 +35,8 @@ public class PostDto
 
     public List<int> RelatedPosts { get; set; } = new List<int>();
     public List<int> TagIds { get; set; } = new List<int>();
+
+    public List<string> Tags { get; set; } = new List<string>();
 
     public int PostCommentsCount { get; set; }
 }

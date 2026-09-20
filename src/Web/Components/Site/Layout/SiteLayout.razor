@@ -4,6 +4,7 @@
 @inject IJSRuntime JS
 @inject ICommandHandler<CreateSubscriptionCommand, int> SubscriptionHandler
 
+<<<<<<< HEAD
 <div class="site-wrapper min-h-screen bg-bg dark:bg-bg-dark text-fg dark:text-fg-dark transition-colors">
     <header class="sticky top-0 z-50 bg-bg/90 dark:bg-bg-dark/90 backdrop-blur-md border-b border-line dark:border-line-dark">
         <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -20,6 +21,19 @@
             </nav>
             <div class="flex items-center gap-1">
                 <button type="button" @onclick="ToggleTheme" class="p-2 rounded-full hover:bg-fg/5 dark:hover:bg-fg-dark/10 transition text-sm" aria-label="تغییر قالب">
+=======
+<div class="site-wrapper min-h-screen bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark transition-colors">
+    <header class="sticky top-0 z-50 bg-paper/90 dark:bg-paper-dark/90 backdrop-blur-md border-b border-line dark:border-line-dark">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="/" class="text-lg font-bold tracking-tight">وبلاگ شخصی</a>
+            <nav class="hidden md:flex items-center gap-6 text-sm">
+                <a href="/" class="hover:text-gold dark:hover:text-gold-dark transition">خانه</a>
+                <a href="/posts" class="hover:text-gold dark:hover:text-gold-dark transition">مطالب</a>
+                <a href="/about" class="hover:text-gold dark:hover:text-gold-dark transition">درباره من</a>
+            </nav>
+            <div class="flex items-center gap-1">
+                <button type="button" @onclick="ToggleTheme" class="p-2 rounded-full hover:bg-ink/5 dark:hover:bg-ink-dark/10 transition" aria-label="تغییر قالب">
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
                     @if (_isDark)
                     {
                         <span>☀️</span>
@@ -29,19 +43,30 @@
                         <span>🌙</span>
                     }
                 </button>
+<<<<<<< HEAD
                 <button type="button" @onclick="ToggleMenu" class="p-2 rounded-full hover:bg-fg/5 dark:hover:bg-fg-dark/10 md:hidden" aria-label="منو">
+=======
+                <button type="button" @onclick="ToggleMenu" class="p-2 rounded-full hover:bg-ink/5 dark:hover:bg-ink-dark/10 md:hidden" aria-label="منو">
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
                     ☰
                 </button>
             </div>
         </div>
         @if (_menuOpen)
         {
+<<<<<<< HEAD
             <nav class="md:hidden border-t border-line dark:border-line-dark px-4 py-3 space-y-1 text-sm">
                 <a href="/posts" class="block py-2" @onclick="CloseMenu">مطالب</a>
                 <a href="/courses" class="block py-2" @onclick="CloseMenu">دوره‌ها</a>
                 <a href="/projects" class="block py-2" @onclick="CloseMenu">پروژه‌ها</a>
                 <a href="/about" class="block py-2" @onclick="CloseMenu">درباره من</a>
                 <a href="/contact" class="block py-2" @onclick="CloseMenu">تماس</a>
+=======
+            <nav class="md:hidden border-t border-line dark:border-line-dark px-4 py-3 space-y-1">
+                <a href="/" class="block py-2" @onclick="CloseMenu">خانه</a>
+                <a href="/posts" class="block py-2" @onclick="CloseMenu">مطالب</a>
+                <a href="/about" class="block py-2" @onclick="CloseMenu">درباره من</a>
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
             </nav>
         }
     </header>
@@ -50,7 +75,11 @@
         @Body
     </main>
 
+<<<<<<< HEAD
     <footer class="border-t border-line dark:border-line-dark mt-12 py-10 text-sm text-fg-muted dark:text-fg-muted-dark">
+=======
+    <footer class="border-t border-line dark:border-line-dark mt-12 py-8 text-center text-sm text-ink-soft dark:text-ink-softdark">
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
         <div class="max-w-3xl mx-auto px-4">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pb-6 border-b border-line dark:border-line-dark">
                 <span class="font-mono text-xs">مطالب جدید را در ایمیل‌تان دریافت کنید</span>

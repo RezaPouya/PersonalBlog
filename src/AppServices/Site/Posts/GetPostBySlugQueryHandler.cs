@@ -1,4 +1,8 @@
 using PersonalBlog.Domain.Entities.Posts;
+<<<<<<< HEAD
+=======
+using PersonalBlog.Domain.Entities.Posts.Dtos;
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 using PersonalBlog.Domain.Exceptions;
 
 namespace AppServices.Site.Posts;
@@ -8,6 +12,7 @@ public class GetPostBySlugQueryHandler(IPostRepository postRepository)
 {
     public async Task<GetPostBySlugResult> Handle(GetPostBySlugQuery input, CancellationToken cancellationToken)
     {
+<<<<<<< HEAD
         // نکته: این هندلر هم قبلاً فقط throw new NotImplementedException() بود.
         var p = await postRepository.GetPublishedBySlugAsync(input.Slug, cancellationToken)
             ?? throw new BusinessException("پست یافت نشد.");
@@ -22,6 +27,11 @@ public class GetPostBySlugQueryHandler(IPostRepository postRepository)
             // نمایش پست مهم‌تر از موفقیت ثبت بازدید است.
         }
 
+=======
+        PostDto p = await postRepository.GetPublishedBySlugAsync(input.Slug, cancellationToken)
+            ?? throw new BusinessException("پست یافت نشد.");
+
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
         return new GetPostBySlugResult
         {
             Id = p.Id,

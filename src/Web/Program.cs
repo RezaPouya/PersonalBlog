@@ -1,7 +1,10 @@
 using AppServices;
 using AppServices.Admin.Auth;
 using AppServices.Commons;
+<<<<<<< HEAD
 using AppServices.Options;
+=======
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -137,6 +140,7 @@ app.MapGet("/admin/files/download", (string path, IWebHostEnvironment env) =>
 })
 .RequireAuthorization("AdminOnly");
 
+<<<<<<< HEAD
 // =================================================================
 
 // ==================== SEO: robots.txt / sitemap.xml / rss.xml ====================
@@ -236,6 +240,8 @@ app.MapGet("/rss.xml", async (
     return Results.File(ms.ToArray(), "application/rss+xml");
 });
 
+=======
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 // =================================================================
 
 app.MapRazorComponents<App>()

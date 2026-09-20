@@ -24,6 +24,7 @@ public class CommentRepository(AppDbContext dbContext) : RepositoryBase<Comment>
 
         return await query.ToDataSourceResult(request, cancellationToken);
     }
+<<<<<<< HEAD
 
     public async Task<List<PublicCommentDto>> GetApprovedByPostIdAsync(int postId, CancellationToken cancellationToken)
     {
@@ -51,4 +52,6 @@ public class CommentRepository(AppDbContext dbContext) : RepositoryBase<Comment>
             })
             .ToListAsync(cancellationToken);
     }
+=======
+>>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 }

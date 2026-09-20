@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageReference Include="HtmlSanitizer" Version="9.2.995" />
+    <PackageReference Include="HtmlSanitizer" Version="9.2.1039" />
 
   </ItemGroup>
 
