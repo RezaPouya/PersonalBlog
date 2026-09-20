@@ -1,0 +1,89 @@
+@using PersonalBlog.Domain.Entities.Posts.Dtos
+
+@if (Loading)
+{
+    <div class="divide-y divide-line dark:divide-line-dark">
+        @for (int i = 0; i < 3; i++)
+        {
+            <div class="animate-pulse py-6">
+                <div class="h-3 bg-line dark:bg-line-dark rounded w-24 mb-3"></div>
+                <div class="h-5 bg-line dark:bg-line-dark rounded w-3/4 mb-3"></div>
+                <div class="h-3 bg-line dark:bg-line-dark rounded w-full"></div>
+            </div>
+        }
+    </div>
+}
+else if (Items.Count == 0)
+{
+    <div class="text-center py-16 text-fg-muted dark:text-fg-muted-dark border border-dashed border-line dark:border-line-dark rounded-xl font-mono text-sm">
+        @EmptyText
+    </div>
+}
+else
+{
+    <div class="divide-y divide-line dark:divide-line-dark">
+        @foreach (var post in Items)
+        {
+            <article class="py-6 first:pt-0">
+                <div class="flex items-center gap-3 text-xs mb-2 font-mono">
+                    @if (!string.IsNullOrWhiteSpace(post.CategorySlug))
+                    {
+                        <a href="/category/@post.CategorySlug" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">@post.CategoryTitle</a>
+                    }
+                    else
+                    {
+                        <span class="text-accent2 dark:text-accent2-dark">@post.CategoryTitle</span>
+                    }
+                    @if (post.PublishedAt.HasValue)
+                    {
+                        <span class="text-fg-muted dark:text-fg-muted-dark">@post.PublishedAt.Value.ToString("yyyy-MM-dd")</span>
+                    }
+                </div>
+                <a href="/post/@post.Slug" class="group block">
+                    <h3 class="text-lg font-semibold leading-snug mb-2 group-hover:text-accent dark:group-hover:text-accent-dark transition">
+                        @post.Title
+                    </h3>
+                    <p class="text-sm text-fg-muted dark:text-fg-muted-dark line-clamp-2 leading-7">@post.Summary</p>
+                </a>
+            </article>
+        }
+    </div>
+
+    @if (TotalPages > 1)
+    {
+        <div class="flex items-center justify-between mt-8 pt-6 border-t border-line dark:border-line-dark text-sm font-mono">
+            @if (Page > 1)
+            {
+                <a href="@BuildPageUrl(Page - 1)" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">« قبل</a>
+            }
+            else
+            {
+                <span></span>
+            }
+
+            <span class="text-fg-muted dark:text-fg-muted-dark">@Page / @TotalPages</span>
+
+            @if (Page < TotalPages)
+            {
+                <a href="@BuildPageUrl(Page + 1)" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">بعد »</a>
+            }
+            else
+            {
+                <span></span>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public List<PostSummaryDto> Items { get; set; } = new();
+    [Parameter] public int Page { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; }
+
+    [Parameter, EditorRequired] public string BaseUrl { get; set; } = default!;
+
+    [Parameter] public string EmptyText { get; set; } = "مطلبی یافت نشد.";
+
+    private string BuildPageUrl(int page) => page <= 1 ? BaseUrl : $"{BaseUrl}?page={page}";
+}

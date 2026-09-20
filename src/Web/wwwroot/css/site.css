@@ -10,3 +10,53 @@ html {
 input, select, textarea {
     font-size: 16px;
 }
+
+/* استایل محتوای HTML مطلب (تولید شده توسط ادیتور Quill در پنل ادمین).
+   کلاس‌های prose/prose-invert تیلویند چون پلاگین Typography لود نشده اثری نداشتند؛
+   این‌جا خودمان استایل می‌دهیم، هماهنگ با پالت رنگی سایت. */
+.post-content { line-height: 1.9; }
+.post-content h1, .post-content h2, .post-content h3, .post-content h4 {
+    font-weight: 700;
+    line-height: 1.4;
+    margin-top: 2rem;
+    margin-bottom: .75rem;
+}
+.post-content h2 { font-size: 1.4rem; }
+.post-content h3 { font-size: 1.2rem; }
+.post-content h4 { font-size: 1.05rem; }
+.post-content p { margin-bottom: 1.1rem; }
+.post-content ul, .post-content ol { margin: 0 0 1.1rem; padding-right: 1.5rem; }
+.post-content li { margin-bottom: .4rem; }
+.post-content a { color: #0F8F7E; text-decoration: underline; text-underline-offset: 2px; }
+.dark .post-content a { color: #3DDBC4; }
+.post-content strong { font-weight: 700; }
+.post-content blockquote {
+    border-right: 3px solid #B5741A;
+    padding-right: 1rem;
+    color: #5B6472;
+    margin: 1.5rem 0;
+}
+.dark .post-content blockquote { border-color: #F2A73B; color: #8B93A1; }
+.post-content pre {
+    background: #0B0E14;
+    color: #E6E8EB;
+    padding: 1rem;
+    border-radius: .75rem;
+    overflow-x: auto;
+    margin: 0 0 1.25rem;
+    direction: ltr;
+    text-align: left;
+    font-size: .85rem;
+    border: 1px solid #1F2430;
+}
+.post-content pre code { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace; }
+.post-content code:not(pre code) {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(242, 167, 59, 0.12);
+    color: #B5741A;
+    padding: .15em .4em;
+    border-radius: .3rem;
+    font-size: .9em;
+}
+.dark .post-content code:not(pre code) { color: #F2A73B; }
+.post-content img { border-radius: .75rem; margin: 1.25rem 0; max-width: 100%; height: auto; }

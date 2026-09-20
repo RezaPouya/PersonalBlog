@@ -6,8 +6,10 @@
 @using AppServices.Base
 @using PersonalBlog.Domain.Entities.Posts.Dtos
 @using Utilities.Dtos
+@using Web.Components.Admin.Shared
 @inject IQueryHandler<GetPostListAsGridQuery, GridDataSourceResult<PostGridDto>> GridHandler
 @inject ICommandHandler<DeletePostCommand, int> DeleteHandler
+@inject IJSRuntime JS
 @inject NavigationManager Nav
 
 <PageTitle>مطالب | ادمین</PageTitle>
@@ -25,139 +27,87 @@
     </div>
 }
 
-@if (_loading)
-{
-    <div class="text-center py-5 text-muted">در حال بارگذاری...</div>
-}
-else
-{
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width:60px">#</th>
-                            <th>عنوان</th>
-                            <th>دسته‌بندی</th>
-                            <th>وضعیت</th>
-                            <th>بازدید</th>
-                            <th>تاریخ</th>
-                            <th style="width:160px"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (_items.Count == 0)
-                        {
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">مطلبی ثبت نشده است.</td>
-                            </tr>
-                        }
-                        else
-                        {
-                            @foreach (var item in _items)
-                            {
-                                <tr>
-                                    <td>@item.Id</td>
-                                    <td>
-                                        <div class="fw-semibold">@item.Title</div>
-                                        <small class="text-muted">@item.Slug</small>
-                                    </td>
-                                    <td>@item.CategoryTitle</td>
-                                    <td>
-                                        @if (item.IsPublished)
-                                        {
-                                            <span class="badge bg-success">منتشر شده</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">پیش‌نویس</span>
-                                        }
-                                        @if (item.IsInEnglish)
-                                        {
-                                            <span class="badge bg-info text-dark">EN</span>
-                                        }
-                                    </td>
-                                    <td>@item.ViewCount</td>
-                                    <td>
-                                        <small>@item.CreatedAtPersian</small>
-                                    </td>
-                                    <td class="text-nowrap">
-                                        <a class="btn btn-sm btn-outline-primary" href="/admin/posts/edit/@item.Id">ویرایش</a>
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(item)" disabled="@_deleting">حذف</button>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        @if (_totalPages > 1)
-        {
-            <div class="card-footer d-flex justify-content-between align-items-center">
-                <small class="text-muted">جمع: @_totals مورد</small>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-secondary" disabled="@(_page <= 1)" @onclick="() => LoadPage(_page - 1)">قبلی</button>
-                    <span class="btn btn-outline-secondary disabled">@_page / @_totalPages</span>
-                    <button class="btn btn-outline-secondary" disabled="@(_page >= _totalPages)" @onclick="() => LoadPage(_page + 1)">بعدی</button>
-                </div>
-            </div>
-        }
-    </div>
-}
+<DynamicGrid @ref="_grid" TItem="PostGridDto" PageSize="15" Columns="_columns" LoadData="LoadGridAsync">
+    <RowActions Context="item">
+        <a class="btn btn-sm btn-outline-primary" href="/admin/posts/edit/@item.Id">ویرایش</a>
+        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteAsync(item)" disabled="@_deleting">حذف</button>
+    </RowActions>
+</DynamicGrid>
 
 @code {
-    private List<PostGridDto> _items = new();
-    private bool _loading = true;
+    private DynamicGrid<PostGridDto>? _grid;
     private bool _deleting;
-    private int _page = 1;
-    private int _pageSize = 15;
-    private int _totalPages;
-    private int _totals;
     private string? _message;
     private bool _isError;
 
-    protected override async Task OnInitializedAsync() => await LoadPage(1);
+    private List<GridColumn<PostGridDto>> _columns = new();
 
-    private async Task LoadPage(int page)
+    protected override void OnInitialized()
     {
-        _loading = true;
-        _page = page;
-        try
+        _columns = new List<GridColumn<PostGridDto>>
         {
-            var result = await GridHandler.Handle(new GetPostListAsGridQuery
-            {
-                Page = _page,
-                PageSize = _pageSize
-            }, CancellationToken.None);
+            new() { Header = "#", PropertyName = nameof(PostGridDto.Id), Sortable = true, Width = "60px",
+                    CellText = p => p.Id.ToString() },
 
-            _items = result.Data?.ToList() ?? new();
-            _totalPages = result.TotalPages;
-            _totals = result.Total;
-        }
-        catch (Exception ex)
-        {
-            _message = ex.Message;
-            _isError = true;
-            _items = new();
-        }
-        finally
-        {
-            _loading = false;
-        }
+            new() { Header = "عنوان", PropertyName = nameof(PostGridDto.Title), Sortable = true, Filterable = true,
+                    CellTemplate = p =>
+                        @<div>
+                            <div class="fw-semibold">@p.Title</div>
+                            <small class="text-muted">@p.Slug</small>
+                        </div> },
+
+            new() { Header = "دسته‌بندی", PropertyName = nameof(PostGridDto.CategoryTitle), Sortable = true, Filterable = true,
+                    CellText = p => p.CategoryTitle },
+
+            new() { Header = "وضعیت",
+                    CellTemplate = p =>
+                        @<div>
+                            @if (p.IsPublished)
+                            {
+                                <span class="badge bg-success">منتشر شده</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">پیش‌نویس</span>
+                            }
+                            @if (p.IsInEnglish)
+                            {
+                                <span class="badge bg-info text-dark">EN</span>
+                            }
+                        </div> },
+
+            new() { Header = "بازدید", PropertyName = nameof(PostGridDto.ViewCount), Sortable = true,
+                    CellText = p => p.ViewCount.ToString() },
+
+            new() { Header = "تاریخ", PropertyName = nameof(PostGridDto.CreatedAt), Sortable = true,
+                    CellTemplate = p => @<small>@p.CreatedAtPersian</small> },
+        };
     }
 
-    private async Task ConfirmDelete(PostGridDto item)
+    private async Task<GridDataSourceResult<PostGridDto>> LoadGridAsync(GridDataSourceRequest request)
     {
-        if (!await Task.FromResult(true)) return; // UI confirm simplified
+        var query = new GetPostListAsGridQuery
+        {
+            Page = request.Page,
+            PageSize = request.PageSize,
+            InputParams = request.InputParams
+        };
+
+        return await GridHandler.Handle(query, CancellationToken.None);
+    }
+
+    private async Task ConfirmDeleteAsync(PostGridDto item)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"مطلب «{item.Title}» حذف شود؟ این عملیات قابل بازگشت نیست.");
+        if (!confirmed) return;
+
         _deleting = true;
         try
         {
             await DeleteHandler.Handle(new DeletePostCommand { Id = item.Id }, CancellationToken.None);
             _message = $"مطلب «{item.Title}» حذف شد.";
             _isError = false;
-            await LoadPage(_page);
+            if (_grid is not null) await _grid.RefreshAsync();
         }
         catch (Exception ex)
         {

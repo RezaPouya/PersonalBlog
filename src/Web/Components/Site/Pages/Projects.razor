@@ -1,0 +1,93 @@
+@page "/projects"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Site.Projects
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Projects.Dtos
+@using Web.Components.Site.Shared
+@inject IQueryHandler<GetProjectsForSiteQuery, List<ProjectSiteDto>> ProjectsHandler
+
+<SeoHead Title="پروژه‌ها" Description="نمونه‌کارها و پروژه‌هایی که روی آن‌ها کار کرده‌ام" />
+
+<section class="mb-8">
+    <h1 class="text-2xl md:text-3xl font-bold mb-2">پروژه‌ها</h1>
+    <p class="text-fg-muted dark:text-fg-muted-dark text-sm">نمونه‌کارها و پروژه‌هایی که روی آن‌ها کار کرده‌ام</p>
+</section>
+
+@if (_loading)
+{
+    <div class="grid sm:grid-cols-2 gap-4">
+        @for (int i = 0; i < 4; i++)
+        {
+            <div class="animate-pulse border border-line dark:border-line-dark rounded-xl p-5">
+                <div class="h-4 bg-line dark:bg-line-dark rounded w-2/3 mb-3"></div>
+                <div class="h-3 bg-line dark:bg-line-dark rounded w-full mb-2"></div>
+                <div class="h-3 bg-line dark:bg-line-dark rounded w-1/2"></div>
+            </div>
+        }
+    </div>
+}
+else if (_projects.Count == 0)
+{
+    <div class="text-center py-16 text-fg-muted dark:text-fg-muted-dark border border-dashed border-line dark:border-line-dark rounded-xl font-mono text-sm">
+        هنوز پروژه‌ای اضافه نشده است.
+    </div>
+}
+else
+{
+    <div class="grid sm:grid-cols-2 gap-4">
+        @foreach (var project in _projects)
+        {
+            <div class="border border-line dark:border-line-dark rounded-xl p-5 hover:border-accent dark:hover:border-accent-dark transition flex flex-col">
+                @if (project.IsFeatured)
+                {
+                    <div class="text-xs font-mono text-accent dark:text-accent-dark mb-1">ویژه</div>
+                }
+                <h3 class="font-semibold mb-2">@project.Title</h3>
+                <p class="text-sm text-fg-muted dark:text-fg-muted-dark leading-7 mb-3 flex-grow">@project.Description</p>
+
+                @if (!string.IsNullOrWhiteSpace(project.TechnologiesCsv))
+                {
+                    <div class="flex flex-wrap gap-1.5 mb-3 font-mono text-xs">
+                        @foreach (var tech in project.TechnologiesCsv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        {
+                            <span class="text-accent2 dark:text-accent2-dark">@tech</span>
+                        }
+                    </div>
+                }
+
+                <div class="flex gap-4 text-sm font-mono">
+                    @if (!string.IsNullOrWhiteSpace(project.LiveUrl))
+                    {
+                        <a href="@project.LiveUrl" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">live</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(project.RepoUrl))
+                    {
+                        <a href="@project.RepoUrl" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">source</a>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<ProjectSiteDto> _projects = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _projects = await ProjectsHandler.Handle(new GetProjectsForSiteQuery(), CancellationToken.None);
+        }
+        catch
+        {
+            _projects = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

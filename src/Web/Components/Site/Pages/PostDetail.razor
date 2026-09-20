@@ -2,64 +2,157 @@
 @layout Web.Components.Site.Layout.SiteLayout
 @rendermode InteractiveServer
 @using AppServices.Site.Posts
+@using AppServices.Site.Comments
+@using AppServices.Commons
 @using AppServices.Base
+@using PersonalBlog.Domain.Entities.Comments.Dtos
+@using Web.Components.Site.Shared
 @inject IQueryHandler<GetPostBySlugQuery, GetPostBySlugResult> PostHandler
+@inject IQueryHandler<GetApprovedCommentsForPostQuery, List<PublicCommentDto>> CommentsHandler
+@inject ICommandHandler<CreateCommentCommand, int> CreateCommentHandler
+@inject ICaptchaService CaptchaService
 
-<PageTitle>@(_post?.Title ?? "مطالب") | وبلاگ شخصی</PageTitle>
+<SeoHead Title="@(_post?.MetaTitle ?? _post?.Title ?? "مطالب")"
+         Description="@(_post?.MetaDescription ?? _post?.Summary)"
+         ImageUrl="@_post?.CoverImageUrl"
+         Type="article"
+         PublishedAt="_post?.PublishedAt" />
 
 @if (_loading)
 {
     <div class="animate-pulse space-y-4">
-        <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-        <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-        <div class="h-40 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div class="h-3 bg-line dark:bg-line-dark rounded w-24"></div>
+        <div class="h-8 bg-line dark:bg-line-dark rounded w-3/4"></div>
+        <div class="h-4 bg-line dark:bg-line-dark rounded w-1/2"></div>
+        <div class="h-48 bg-line dark:bg-line-dark rounded-xl"></div>
     </div>
 }
 else if (_post is null)
 {
-    <div class="text-center py-16">
-        <p class="text-gray-500 dark:text-gray-400">مطلب یافت نشد.</p>
-        <a href="/" class="text-sky-600 mt-4 inline-block">بازگشت به خانه</a>
+    <div class="text-center py-20">
+        <p class="text-fg-muted dark:text-fg-muted-dark mb-3">مطلب یافت نشد.</p>
+        <a href="/" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">بازگشت به خانه</a>
     </div>
 }
 else
 {
     <article>
-        <div class="mb-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <a href="/" class="hover:text-sky-600">خانه</a>
+        <div class="mb-4 flex items-center gap-2 text-xs font-mono text-fg-muted dark:text-fg-muted-dark">
+            <a href="/" class="hover:text-accent dark:hover:text-accent-dark transition">~</a>
             <span>/</span>
-            <span>@_post.CategoryTitle</span>
+            <a href="/category/@_post.CategorySlug" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">@_post.CategoryTitle</a>
         </div>
 
         <h1 class="text-2xl md:text-3xl font-bold mb-3 leading-tight">@_post.Title</h1>
 
-        <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-6">
+        <div class="flex flex-wrap items-center gap-3 text-xs font-mono text-fg-muted dark:text-fg-muted-dark mb-6 pb-6 border-b border-line dark:border-line-dark">
             @if (_post.PublishedAt.HasValue)
             {
-                <span>@_post.PublishedAt.Value.ToString("yyyy/MM/dd")</span>
+                <span>@_post.PublishedAt.Value.ToString("yyyy-MM-dd")</span>
             }
-            <span>•</span>
             <span>@_post.ViewCount بازدید</span>
         </div>
 
         @if (!string.IsNullOrEmpty(_post.CoverImageUrl))
         {
-            <img src="@_post.CoverImageUrl" alt="@_post.Title" class="w-full rounded-2xl mb-6 object-cover max-h-80" />
+            <img src="@_post.CoverImageUrl" alt="@_post.Title" class="w-full rounded-xl mb-8 object-cover max-h-96" />
         }
 
-        <div class="prose prose-sm dark:prose-invert max-w-none mb-8 leading-relaxed">
+        <div class="post-content mb-8">
             @((MarkupString)_post.Content)
         </div>
 
         @if (_post.Tags.Any())
         {
-            <div class="flex flex-wrap gap-2 mb-8">
-                @foreach (var tag in _post.Tags)
+            <div class="flex flex-wrap gap-2 pt-6 border-t border-line dark:border-line-dark mb-10">
+                @foreach (var tagId in _post.TagIds.Zip(_post.Tags, (id, title) => (id, title)))
                 {
-                    <span class="px-3 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">#@tag</span>
+                    <a href="/tag/@tagId.id" class="px-3 py-1 text-xs font-mono rounded-lg border border-line dark:border-line-dark text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark hover:border-accent dark:hover:border-accent-dark transition">#@tagId.title</a>
                 }
             </div>
         }
+
+        <!-- ============ کامنت‌ها ============ -->
+        <section class="border-t border-line dark:border-line-dark pt-8">
+            <h2 class="text-lg font-bold mb-6">نظرات (@_comments.Count)</h2>
+
+            @if (_comments.Count == 0)
+            {
+                <p class="text-sm text-fg-muted dark:text-fg-muted-dark mb-8">هنوز نظری ثبت نشده است.</p>
+            }
+            else
+            {
+                <div class="space-y-6 mb-10">
+                    @foreach (var comment in _comments)
+                    {
+                        <div>
+                            <div class="flex items-baseline gap-2 mb-1">
+                                <span class="font-semibold text-sm">@comment.DisplayName</span>
+                                <span class="text-xs font-mono text-fg-muted dark:text-fg-muted-dark">@comment.CreatedAtPersian</span>
+                            </div>
+                            <p class="text-sm text-fg-muted dark:text-fg-muted-dark leading-7">@comment.Content</p>
+
+                            @if (comment.Replies.Any())
+                            {
+                                <div class="mt-4 mr-6 pr-4 border-r-2 border-line dark:border-line-dark space-y-4">
+                                    @foreach (var reply in comment.Replies)
+                                    {
+                                        <div>
+                                            <div class="flex items-baseline gap-2 mb-1">
+                                                <span class="font-semibold text-sm">@reply.DisplayName</span>
+                                                <span class="text-xs font-mono text-fg-muted dark:text-fg-muted-dark">@reply.CreatedAtPersian</span>
+                                            </div>
+                                            <p class="text-sm text-fg-muted dark:text-fg-muted-dark leading-7">@reply.Content</p>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_post.IsCommentsEnabled)
+            {
+                <div class="bg-surface dark:bg-surface-dark border border-line dark:border-line-dark rounded-xl p-5">
+                    <h3 class="font-semibold mb-4 text-sm">ثبت نظر جدید</h3>
+
+                    @if (!string.IsNullOrEmpty(_commentMessage))
+                    {
+                        <div class="mb-4 text-sm @(_commentIsError ? "text-red-500" : "text-accent2 dark:text-accent2-dark")">@_commentMessage</div>
+                    }
+
+                    <EditForm Model="_commentForm" OnValidSubmit="SubmitCommentAsync">
+                        <DataAnnotationsValidator />
+                        <div class="grid sm:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <InputText class="w-full rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" placeholder="نام شما" @bind-Value="_commentForm.DisplayName" />
+                                <ValidationMessage For="() => _commentForm.DisplayName" class="text-xs text-red-500" />
+                            </div>
+                            <div>
+                                <InputText class="w-full rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" dir="ltr" placeholder="ایمیل (نمایش داده نمی‌شود)" @bind-Value="_commentForm.Email" />
+                                <ValidationMessage For="() => _commentForm.Email" class="text-xs text-red-500" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <InputTextArea class="w-full rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" rows="4" placeholder="متن نظر شما" @bind-Value="_commentForm.Content" />
+                            <ValidationMessage For="() => _commentForm.Content" class="text-xs text-red-500" />
+                        </div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <label class="text-sm font-mono text-fg-muted dark:text-fg-muted-dark whitespace-nowrap">@_captchaQuestion</label>
+                            <input class="w-24 rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" @bind="_commentForm.CaptchaAnswer" />
+                        </div>
+                        <button type="submit" class="bg-fg dark:bg-fg-dark text-bg dark:text-bg-dark px-5 py-2 rounded-lg text-sm font-medium hover:bg-accent dark:hover:bg-accent-dark transition disabled:opacity-50" disabled="@_submittingComment">
+                            @(_submittingComment ? "در حال ارسال..." : "ارسال نظر")
+                        </button>
+                    </EditForm>
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-fg-muted dark:text-fg-muted-dark font-mono">ثبت نظر برای این مطلب غیرفعال است.</p>
+            }
+        </section>
     </article>
 }
 
@@ -67,7 +160,14 @@ else
     [Parameter] public string Slug { get; set; } = default!;
 
     private GetPostBySlugResult? _post;
+    private List<PublicCommentDto> _comments = new();
     private bool _loading = true;
+
+    private CreateCommentCommand _commentForm = new();
+    private bool _submittingComment;
+    private string? _commentMessage;
+    private bool _commentIsError;
+    private string _captchaQuestion = "";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -75,6 +175,8 @@ else
         try
         {
             _post = await PostHandler.Handle(new GetPostBySlugQuery { Slug = Slug }, CancellationToken.None);
+            _comments = await CommentsHandler.Handle(new GetApprovedCommentsForPostQuery { PostId = _post.Id }, CancellationToken.None);
+            await LoadCaptchaAsync();
         }
         catch
         {
@@ -83,6 +185,41 @@ else
         finally
         {
             _loading = false;
+        }
+    }
+
+    private async Task LoadCaptchaAsync()
+    {
+        var (captchaId, question) = await CaptchaService.GenerateChallengeAsync(CancellationToken.None);
+        _commentForm.CaptchaId = captchaId;
+        _captchaQuestion = question;
+    }
+
+    private async Task SubmitCommentAsync()
+    {
+        if (_post is null) return;
+
+        _submittingComment = true;
+        _commentMessage = null;
+        try
+        {
+            _commentForm.PostId = _post.Id;
+            await CreateCommentHandler.Handle(_commentForm, CancellationToken.None);
+
+            _commentMessage = "نظر شما ثبت شد و پس از تأیید نمایش داده می‌شود. ممنون از مشارکت شما.";
+            _commentIsError = false;
+            _commentForm = new CreateCommentCommand();
+            await LoadCaptchaAsync();
+        }
+        catch (Exception ex)
+        {
+            _commentMessage = ex.Message;
+            _commentIsError = true;
+            await LoadCaptchaAsync();
+        }
+        finally
+        {
+            _submittingComment = false;
         }
     }
 }

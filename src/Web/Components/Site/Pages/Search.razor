@@ -1,0 +1,66 @@
+@page "/search"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Site.Posts
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Posts.Dtos
+@using Web.Components.Site.Shared
+@inject IQueryHandler<SearchPostsQuery, PostListPageDto> SearchHandler
+
+<SeoHead Title="@(string.IsNullOrWhiteSpace(Q) ? "جستجو" : $"جستجوی «{Q}»")" />
+
+<section class="mb-8">
+    <h1 class="text-2xl md:text-3xl font-bold mb-4">جستجو</h1>
+    <form method="get" action="/search" class="flex gap-2">
+        <input type="text" name="q" value="@Q" placeholder="جستجو در مطالب..."
+               class="flex-grow rounded-lg border border-line dark:border-line-dark bg-transparent px-4 py-2.5 text-sm" />
+        <button type="submit" class="bg-fg dark:bg-fg-dark text-bg dark:text-bg-dark px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-accent dark:hover:bg-accent-dark transition">
+            جستجو
+        </button>
+    </form>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Q))
+{
+    <p class="text-sm font-mono text-fg-muted dark:text-fg-muted-dark mb-6">
+        @_page.Total نتیجه برای «@Q»
+    </p>
+
+    <PostListSection Loading="_loading" Items="_page.Items" Page="_page.Page" TotalPages="_page.TotalPages"
+                     BaseUrl="@($"/search?q={Uri.EscapeDataString(Q)}")" EmptyText="نتیجه‌ای پیدا نشد." />
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? Q { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? PageNumber { get; set; }
+
+    private PostListPageDto _page = new();
+    private bool _loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Q))
+        {
+            _page = new PostListPageDto { Page = 1 };
+            _loading = false;
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            _page = await SearchHandler.Handle(new SearchPostsQuery { Query = Q, Page = PageNumber ?? 1, PageSize = 10 }, CancellationToken.None);
+        }
+        catch
+        {
+            _page = new PostListPageDto { Page = 1 };
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

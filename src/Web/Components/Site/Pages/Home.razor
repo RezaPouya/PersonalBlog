@@ -4,68 +4,84 @@
 @rendermode InteractiveServer
 @using AppServices.Site.Posts
 @using AppServices.Base
+@using AppServices.Site.Projects
+@using AppServices.Options
+@using Microsoft.Extensions.Options
+@using PersonalBlog.Domain.Entities.Posts.Dtos
+@using PersonalBlog.Domain.Entities.Projects.Dtos
+@using Web.Components.Site.Shared
 @inject IQueryHandler<GetLatestPostsQuery, List<GetLatestPostsResult>> LatestPostsHandler
+@inject IQueryHandler<GetProjectsForSiteQuery, List<ProjectSiteDto>> ProjectsHandler
+@inject IOptions<SiteSettings> SiteSettingsOptions
 
-<PageTitle>خانه | وبلاگ شخصی</PageTitle>
+<SeoHead Title="@_site.Title" Description="@_site.Description" />
 
-<section class="mb-8">
-    <h1 class="text-2xl md:text-3xl font-bold mb-2">آخرین مطالب</h1>
-    <p class="text-gray-600 dark:text-gray-400 text-sm">جدیدترین نوشته‌های وبلاگ</p>
+<!-- ============ نوار معرفی کوتاه ============ -->
+<section class="flex items-center gap-3 mb-10 pb-6 border-b border-line dark:border-line-dark">
+    <img src="/uploads/profile/photo.jpg"
+         onerror="this.onerror=null;this.src='/images/avatar-placeholder.svg'"
+         alt="عکس پروفایل"
+         class="w-12 h-12 rounded-lg object-cover border border-line dark:border-line-dark shrink-0" />
+    <div class="min-w-0">
+        <p class="text-sm">
+            <span class="font-semibold">[نام شما]</span>
+            <span class="text-fg-muted dark:text-fg-muted-dark"> — برنامه‌نویس ارشد؛ این‌جا درباره‌ی چیزهایی که می‌سازم می‌نویسم.</span>
+        </p>
+        <a href="/about" class="text-xs text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">بیشتر درباره‌ی من</a>
+    </div>
 </section>
 
-@if (_loading)
+@if (_featuredProject is not null)
 {
-    <div class="space-y-4">
-        @for (int i = 0; i < 3; i++)
-        {
-            <div class="animate-pulse bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
-                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
-                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
-                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+    <!-- ============ پروژه‌ی ویژه ============ -->
+    <a href="/projects" class="block mb-10 p-4 rounded-xl border border-line dark:border-line-dark hover:border-accent dark:hover:border-accent-dark transition group">
+        <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+                <div class="text-xs font-mono text-accent dark:text-accent-dark mb-1">پروژه‌ی ویژه</div>
+                <div class="font-semibold group-hover:text-accent dark:group-hover:text-accent-dark transition">@_featuredProject.Title</div>
+                <p class="text-sm text-fg-muted dark:text-fg-muted-dark line-clamp-1 mt-0.5">@_featuredProject.Description</p>
             </div>
-        }
-    </div>
-}
-else if (_posts.Count == 0)
-{
-    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
-        هنوز مطلبی منتشر نشده است.
-    </div>
-}
-else
-{
-    <div class="space-y-4">
-        @foreach (var post in _posts)
-        {
-            <article class="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition">
-                <a href="/post/@post.Slug" class="block">
-                    <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        <span class="bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-full">@post.CategoryTitle</span>
-                        @if (post.PublishedAt.HasValue)
-                        {
-                            <span>@post.PublishedAt.Value.ToString("yyyy/MM/dd")</span>
-                        }
-                    </div>
-                    <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white leading-snug">@post.Title</h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">@post.Summary</p>
-                    <div class="mt-3 flex items-center text-xs text-gray-400">
-                        <span>@post.ViewCount بازدید</span>
-                    </div>
-                </a>
-            </article>
-        }
-    </div>
+            <span class="font-mono text-xs text-fg-muted dark:text-fg-muted-dark shrink-0">/projects</span>
+        </div>
+    </a>
 }
 
+<!-- ============ آخرین مطالب ============ -->
+<section>
+    <div class="flex items-baseline justify-between mb-6">
+        <h1 class="text-xl font-bold">آخرین مطالب</h1>
+        <a href="/posts" class="text-sm font-mono text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">/posts</a>
+    </div>
+
+    <PostListSection Loading="_loading" Items="_posts" Page="1" TotalPages="1"
+                     BaseUrl="/posts" EmptyText="هنوز مطلبی منتشر نشده است." />
+</section>
+
 @code {
-    private List<GetLatestPostsResult> _posts = new();
+    private List<PostSummaryDto> _posts = new();
+    private ProjectSiteDto? _featuredProject;
     private bool _loading = true;
+    private SiteSettings _site = new();
 
     protected override async Task OnInitializedAsync()
     {
+        _site = SiteSettingsOptions.Value;
+
         try
         {
-            _posts = await LatestPostsHandler.Handle(new GetLatestPostsQuery { Count = 10 }, CancellationToken.None);
+            var latest = await LatestPostsHandler.Handle(new GetLatestPostsQuery { Count = 10 }, CancellationToken.None);
+            _posts = latest.Select(p => new PostSummaryDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Slug = p.Slug,
+                Summary = p.Summary,
+                CoverImageUrl = p.CoverImageUrl,
+                PublishedAt = p.PublishedAt,
+                CategoryTitle = p.CategoryTitle,
+                CategorySlug = p.CategorySlug,
+                ViewCount = p.ViewCount
+            }).ToList();
         }
         catch
         {
@@ -74,6 +90,16 @@ else
         finally
         {
             _loading = false;
+        }
+
+        try
+        {
+            var projects = await ProjectsHandler.Handle(new GetProjectsForSiteQuery(), CancellationToken.None);
+            _featuredProject = projects.FirstOrDefault(p => p.IsFeatured) ?? projects.FirstOrDefault();
+        }
+        catch
+        {
+            _featuredProject = null;
         }
     }
 }

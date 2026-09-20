@@ -65,4 +65,20 @@ public class TagRepository(AppDbContext dbContext) : RepositoryBase<Tag>(dbConte
             request,
             cancellationToken);
     }
+
+    public async Task<List<SitemapUrlDto>> GetAllForSitemapAsync(CancellationToken cancellationToken)
+    {
+        // فقط برچسب‌هایی که حداقل یک پست منتشرشده دارند وارد sitemap می‌شوند
+        // تا صفحه‌ی خالی /tag/{id} به گوگل معرفی نشود.
+        // نکته: Tag اسلاگ ندارد، پس شناسه‌ی عددی را در همان فیلد Slug می‌گذاریم
+        // چون مسیر سایت هم /tag/{id:int} است، نه /tag/{slug}.
+        return await DbContext.Tags.AsNoTracking()
+            .Where(t => t.PostTags.Any(pt => pt.Post.IsPublished && !pt.Post.IsDeleted))
+            .Select(t => new SitemapUrlDto
+            {
+                Slug = t.Id.ToString(),
+                UpdatedAt = t.UpdatedAt
+            })
+            .ToListAsync(cancellationToken);
+    }
 }

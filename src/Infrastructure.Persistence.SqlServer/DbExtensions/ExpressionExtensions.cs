@@ -136,7 +136,18 @@ public static class ExpressionExtensions
 
         var filterOp = filter.Operation.ToLower().Trim();
 
-        MemberExpression member = Expression.Property(param, filter.PropertyName);
+        // نکته مهم: جستجوی پراپرتی باید case-insensitive باشد (دقیقاً مثل متد OrderBy
+        // در همین فایل). Expression.Property(param, string) به‌صورت پیش‌فرض
+        // case-sensitive است، پس اگر فیلتر با نام camelCase (مثلاً "title") بیاید،
+        // با اینکه ContainsProperty بالا آن را قبول می‌کند، همین‌جا با Exception
+        // متوقف می‌شد چون پراپرتی واقعی در سی‌شارپ "Title" است.
+        PropertyInfo propertyInfo = t.GetProperty(filter.PropertyName,
+            BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+
+        if (propertyInfo is null)
+            return null;
+
+        MemberExpression member = Expression.Property(param, propertyInfo);
 
         var propertyType = ((PropertyInfo)member.Member).PropertyType;
 

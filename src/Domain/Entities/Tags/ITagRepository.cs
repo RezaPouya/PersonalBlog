@@ -21,4 +21,6 @@ public interface ITagRepository : IRepository<Tag>
 
     Task<List<IdTitleDto<int>>> GetListForLookupAsync(
         CancellationToken cancellationToken);
+
+    Task<List<SitemapUrlDto>> GetAllForSitemapAsync(CancellationToken cancellationToken);
 }
