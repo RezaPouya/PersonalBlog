@@ -1,0 +1,64 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="html-editor-wrapper">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label class="form-label">@Label</label>
+    }
+    <div id="@_editorId" style="min-height:@MinHeight; background:#fff;"></div>
+    @if (!string.IsNullOrWhiteSpace(HelpText))
+    {
+        <div class="form-text">@HelpText</div>
+    }
+</div>
+
+@code {
+    /// <summary>محتوای HTML فعلی — دو‌طرفه با @bind-Value.</summary>
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string MinHeight { get; set; } = "320px";
+    [Parameter] public string? HelpText { get; set; } =
+        "برای درج کد (مثل C#) از دکمه‌ی «</>» در نوار ابزار استفاده کنید؛ رنگی‌شدن کد خودکار است.";
+
+    private readonly string _editorId = $"html-editor-{Guid.NewGuid():N}";
+    private DotNetObjectReference<HtmlEditor>? _dotNetRef;
+    private bool _initialized;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("htmlEditorInterop.init", _editorId, _dotNetRef, Value);
+            _initialized = true;
+        }
+    }
+
+    /// <summary>از سمت جاوااسکریپت (Quill) با هر تغییر محتوا صدا زده می‌شود.</summary>
+    [JSInvokable]
+    public async Task OnContentChanged(string html)
+    {
+        Value = html;
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_initialized)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("htmlEditorInterop.destroy", _editorId);
+            }
+            catch (JSDisconnectedException)
+            {
+                // اتصال SignalR قبلاً قطع شده (مثلاً کاربر صفحه را بسته)؛ نیازی به کاری نیست.
+            }
+        }
+
+        _dotNetRef?.Dispose();
+    }
+}

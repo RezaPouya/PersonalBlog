@@ -1,0 +1,72 @@
+@page "/tag/{Id:int}"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Site.Posts
+@using AppServices.Site.Tags
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Posts.Dtos
+@using Web.Components.Site.Shared
+@inject IQueryHandler<GetPublishedPostsQuery, PostListPageDto> PostsHandler
+@inject IQueryHandler<GetTagByIdQuery, TagHeaderDto?> TagHandler
+
+<SeoHead Title="@("#" + (_tag?.Title ?? "برچسب"))" />
+
+@if (_notFound)
+{
+    <div class="text-center py-20">
+        <p class="text-fg-muted dark:text-fg-muted-dark mb-3">برچسب یافت نشد.</p>
+        <a href="/" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">بازگشت به خانه</a>
+    </div>
+}
+else
+{
+    <section class="mb-8">
+        <div class="text-xs font-mono text-accent2 dark:text-accent2-dark mb-2">برچسب</div>
+        <h1 class="text-2xl md:text-3xl font-bold font-mono">#@(_tag?.Title ?? "...")</h1>
+    </section>
+
+    <PostListSection Loading="_loading" Items="_page.Items" Page="_page.Page" TotalPages="_page.TotalPages"
+                     BaseUrl="@($"/tag/{Id}")" EmptyText="هنوز مطلبی با این برچسب منتشر نشده است." />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? PageNumber { get; set; }
+
+    private TagHeaderDto? _tag;
+    private PostListPageDto _page = new();
+    private bool _loading = true;
+    private bool _notFound;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _notFound = false;
+        try
+        {
+            _tag = await TagHandler.Handle(new GetTagByIdQuery { Id = Id }, CancellationToken.None);
+            if (_tag is null)
+            {
+                _notFound = true;
+                return;
+            }
+
+            _page = await PostsHandler.Handle(new GetPublishedPostsQuery
+            {
+                Page = PageNumber ?? 1,
+                PageSize = 10,
+                TagId = _tag.Id
+            }, CancellationToken.None);
+        }
+        catch
+        {
+            _notFound = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

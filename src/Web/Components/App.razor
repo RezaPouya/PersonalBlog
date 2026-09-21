@@ -22,12 +22,33 @@
                 extend: {
                     fontFamily: {
                         sans: ['Vazirmatn', 'Tahoma', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+                    },
+                    colors: {
+                        bg: { DEFAULT: '#FAFAF9', dark: '#0B0E14' },
+                        surface: { DEFAULT: '#FFFFFF', dark: '#131720' },
+                        fg: {
+                            DEFAULT: '#14181F', dark: '#E6E8EB',
+                            muted: { DEFAULT: '#5B6472', dark: '#8B93A1' }
+                        },
+                        accent: { DEFAULT: '#B5741A', dark: '#F2A73B' },
+                        accent2: { DEFAULT: '#0F8F7E', dark: '#3DDBC4' },
+                        line: { DEFAULT: '#E5E7EB', dark: '#1F2430' },
                     }
                 }
             }
         }
     </script>
+    <!-- مدیریت قالب روشن/تیره (توضیح کامل داخل خود فایل) -->
+    <script src="js/theme.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="alternate" type="application/rss+xml" title="فید RSS" href="/rss.xml" />
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- ادیتور HTML5 پنل ادمین: Quill.js (رایگان/متن‌باز) + highlight.js برای رنگی‌کردن کد -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.snow.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs2015.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.6/quill.min.js"></script>
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
@@ -37,6 +58,16 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="js/html-editor.js"></script>
+    <script>
+        // بعد از هر پیمایش داخلی Blazor (بدون رفرش کامل مرورگر)، قالب را دوباره اعمال کن
+        // تا کلاس dark پاک نشود. جزئیات کامل در wwwroot/js/theme.js.
+        Blazor.addEventListener('enhancedload', function () {
+            if (window.siteTheme) {
+                window.siteTheme.apply();
+            }
+        });
+    </script>
 </body>
 
 </html>

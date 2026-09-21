@@ -1,0 +1,77 @@
+@page "/category/{Slug}"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Site.Posts
+@using AppServices.Site.Categories
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Categories.Dtos
+@using PersonalBlog.Domain.Entities.Posts.Dtos
+@using Web.Components.Site.Shared
+@inject IQueryHandler<GetPublishedPostsQuery, PostListPageDto> PostsHandler
+@inject IQueryHandler<GetCategoryBySlugQuery, CategoryDot?> CategoryHandler
+
+<SeoHead Title="@(_category?.Title ?? "دسته‌بندی")" Description="@_category?.Description" />
+
+@if (_notFound)
+{
+    <div class="text-center py-20">
+        <p class="text-fg-muted dark:text-fg-muted-dark mb-3">دسته‌بندی یافت نشد.</p>
+        <a href="/" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">بازگشت به خانه</a>
+    </div>
+}
+else
+{
+    <section class="mb-8">
+        <div class="text-xs font-mono text-accent2 dark:text-accent2-dark mb-2">دسته‌بندی</div>
+        <h1 class="text-2xl md:text-3xl font-bold">@(_category?.Title ?? "...")</h1>
+        @if (!string.IsNullOrWhiteSpace(_category?.Description))
+        {
+            <p class="text-fg-muted dark:text-fg-muted-dark text-sm mt-2">@_category.Description</p>
+        }
+    </section>
+
+    <PostListSection Loading="_loading" Items="_page.Items" Page="_page.Page" TotalPages="_page.TotalPages"
+                     BaseUrl="@($"/category/{Slug}")" EmptyText="هنوز مطلبی در این دسته‌بندی منتشر نشده است." />
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = default!;
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? PageNumber { get; set; }
+
+    private CategoryDot? _category;
+    private PostListPageDto _page = new();
+    private bool _loading = true;
+    private bool _notFound;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _notFound = false;
+        try
+        {
+            _category = await CategoryHandler.Handle(new GetCategoryBySlugQuery { Slug = Slug }, CancellationToken.None);
+            if (_category is null)
+            {
+                _notFound = true;
+                return;
+            }
+
+            _page = await PostsHandler.Handle(new GetPublishedPostsQuery
+            {
+                Page = PageNumber ?? 1,
+                PageSize = 10,
+                CategoryId = _category.Id
+            }, CancellationToken.None);
+        }
+        catch
+        {
+            _notFound = true;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

@@ -1,0 +1,288 @@
+@page "/admin/projects"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.Projects.Grid
+@using AppServices.Admin.Projects.Create
+@using AppServices.Admin.Projects.Update
+@using AppServices.Admin.Projects.Delete
+@using AppServices.Admin.Projects.Read
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Projects.Dtos
+@using Utilities.Dtos
+@using Web.Components.Admin.Shared
+@inject IQueryHandler<GetProjectListAsGridQuery, GridDataSourceResult<ProjectGridDto>> GridHandler
+@inject IQueryHandler<GetProjectQuery, ProjectDto?> GetHandler
+@inject ICommandHandler<CreateProjectCommand, int> CreateHandler
+@inject ICommandHandler<UpdateProjectCommand, int> UpdateHandler
+@inject ICommandHandler<DeleteProjectCommand, int> DeleteHandler
+@inject IJSRuntime JS
+
+<PageTitle>پروژه‌ها | ادمین</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">مدیریت پروژه‌ها</h1>
+    <button class="btn btn-success" @onclick="ShowCreate">+ پروژه جدید</button>
+</div>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+    </div>
+}
+
+<DynamicGrid @ref="_grid" TItem="ProjectGridDto" PageSize="15" Columns="_columns" LoadData="LoadGridAsync">
+    <RowActions Context="item">
+        <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditAsync(item.Id)">ویرایش</button>
+        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteAsync(item)">حذف</button>
+    </RowActions>
+</DynamicGrid>
+
+@if (_showModal)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_form.Id == 0 ? "پروژه جدید" : "ویرایش پروژه")</h5>
+                        <button type="button" class="btn-close" @onclick="() => _showModal = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(_formError))
+                        {
+                            <div class="alert alert-danger">@_formError</div>
+                        }
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">عنوان *</label>
+                                <InputText class="form-control" @bind-Value="_form.Title" />
+                                <ValidationMessage For="() => _form.Title" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">اسلاگ *</label>
+                                <InputText class="form-control" dir="ltr" @bind-Value="_form.Slug" />
+                                <ValidationMessage For="() => _form.Slug" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">توضیحات *</label>
+                                <InputTextArea class="form-control" rows="4" @bind-Value="_form.Description" />
+                                <ValidationMessage For="() => _form.Description" />
+                            </div>
+                            <div class="col-md-6">
+                                <ImageUploader Label="تصویر پروژه" SubFolder="projects" @bind-Value="_form.ImageUrl" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">تکنولوژی‌ها (با کاما جدا کنید)</label>
+                                <InputText class="form-control" dir="ltr" placeholder="Blazor, EF Core, SQL Server" @bind-Value="_form.TechnologiesCsv" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">لینک دمو/سایت زنده</label>
+                                <InputText class="form-control" dir="ltr" @bind-Value="_form.LiveUrl" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">لینک مخزن (GitHub)</label>
+                                <InputText class="form-control" dir="ltr" @bind-Value="_form.RepoUrl" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">ترتیب نمایش</label>
+                                <InputNumber class="form-control" @bind-Value="_form.OrderInProjects" />
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check form-check-inline">
+                                    <InputCheckbox class="form-check-input" id="prFeat" @bind-Value="_form.IsFeatured" />
+                                    <label class="form-check-label" for="prFeat">پروژه ویژه</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <InputCheckbox class="form-check-input" id="prEn" @bind-Value="_form.IsInEnglish" />
+                                    <label class="form-check-label" for="prEn">انگلیسی است؟</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" @onclick="() => _showModal = false">انصراف</button>
+                        <button type="submit" class="btn btn-primary" disabled="@_saving">@(_saving ? "در حال ذخیره..." : "ذخیره")</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DynamicGrid<ProjectGridDto>? _grid;
+    private List<GridColumn<ProjectGridDto>> _columns = new();
+    private string? _message;
+    private bool _isError;
+    private bool _showModal;
+    private bool _saving;
+    private string? _formError;
+    private ProjectFormModel _form = new();
+
+    protected override void OnInitialized()
+    {
+        _columns = new List<GridColumn<ProjectGridDto>>
+        {
+            new() { Header = "شناسه", PropertyName = nameof(ProjectGridDto.Id), Sortable = true, Width = "70px", CellText = p => p.Id.ToString() },
+            new() { Header = "عنوان", PropertyName = nameof(ProjectGridDto.Title), Sortable = true, Filterable = true,
+                    CellTemplate = p =>
+                        @<div>
+                            <div class="fw-semibold">@p.Title</div>
+                            <small class="text-muted" dir="ltr">@p.Slug</small>
+                        </div> },
+            new() { Header = "ویژه", CellTemplate = p =>
+                @<span>@(p.IsFeatured ? "⭐" : "")</span> },
+            new() { Header = "ترتیب", PropertyName = nameof(ProjectGridDto.OrderInProjects), Sortable = true, CellText = p => p.OrderInProjects.ToString() },
+            new() { Header = "تاریخ", PropertyName = nameof(ProjectGridDto.CreatedAt), Sortable = true, CellTemplate = p => @<small>@p.CreatedAtPersian</small> },
+        };
+    }
+
+    private async Task<GridDataSourceResult<ProjectGridDto>> LoadGridAsync(GridDataSourceRequest request)
+    {
+        var query = new GetProjectListAsGridQuery { Page = request.Page, PageSize = request.PageSize, InputParams = request.InputParams };
+        return await GridHandler.Handle(query, CancellationToken.None);
+    }
+
+    private void ShowCreate()
+    {
+        _form = new ProjectFormModel();
+        _formError = null;
+        _showModal = true;
+    }
+
+    private async Task ShowEditAsync(int id)
+    {
+        _formError = null;
+        try
+        {
+            var project = await GetHandler.Handle(new GetProjectQuery { Id = id }, CancellationToken.None);
+            if (project is null)
+            {
+                _message = "پروژه یافت نشد.";
+                _isError = true;
+                return;
+            }
+
+            _form = new ProjectFormModel
+            {
+                Id = project.Id,
+                Title = project.Title,
+                Slug = project.Slug,
+                Description = project.Description,
+                ImageUrl = project.ImageUrl,
+                LiveUrl = project.LiveUrl,
+                RepoUrl = project.RepoUrl,
+                TechnologiesCsv = project.TechnologiesCsv,
+                OrderInProjects = project.OrderInProjects,
+                IsFeatured = project.IsFeatured,
+                IsInEnglish = project.IsInEnglish
+            };
+            _showModal = true;
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _saving = true;
+        _formError = null;
+        try
+        {
+            if (_form.Id == 0)
+            {
+                await CreateHandler.Handle(new CreateProjectCommand
+                {
+                    Title = _form.Title,
+                    Slug = _form.Slug,
+                    Description = _form.Description,
+                    ImageUrl = _form.ImageUrl,
+                    LiveUrl = _form.LiveUrl,
+                    RepoUrl = _form.RepoUrl,
+                    TechnologiesCsv = _form.TechnologiesCsv,
+                    OrderInProjects = _form.OrderInProjects,
+                    IsFeatured = _form.IsFeatured,
+                    IsInEnglish = _form.IsInEnglish
+                }, CancellationToken.None);
+                _message = "پروژه ایجاد شد.";
+            }
+            else
+            {
+                await UpdateHandler.Handle(new UpdateProjectCommand
+                {
+                    Id = _form.Id,
+                    Title = _form.Title,
+                    Slug = _form.Slug,
+                    Description = _form.Description,
+                    ImageUrl = _form.ImageUrl,
+                    LiveUrl = _form.LiveUrl,
+                    RepoUrl = _form.RepoUrl,
+                    TechnologiesCsv = _form.TechnologiesCsv,
+                    OrderInProjects = _form.OrderInProjects,
+                    IsFeatured = _form.IsFeatured,
+                    IsInEnglish = _form.IsInEnglish
+                }, CancellationToken.None);
+                _message = "تغییرات ذخیره شد.";
+            }
+
+            _isError = false;
+            _showModal = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(ProjectGridDto item)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"پروژه «{item.Title}» حذف شود؟");
+        if (!confirmed) return;
+
+        try
+        {
+            await DeleteHandler.Handle(new DeleteProjectCommand { Id = item.Id }, CancellationToken.None);
+            _message = $"پروژه «{item.Title}» حذف شد.";
+            _isError = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+
+    private class ProjectFormModel
+    {
+        public int Id { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "عنوان اجباری است")]
+        public string Title { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "اسلاگ اجباری است")]
+        public string Slug { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "توضیحات اجباری است")]
+        public string Description { get; set; } = "";
+
+        public string? ImageUrl { get; set; }
+        public string? LiveUrl { get; set; }
+        public string? RepoUrl { get; set; }
+        public string? TechnologiesCsv { get; set; }
+        public int OrderInProjects { get; set; }
+        public bool IsFeatured { get; set; }
+        public bool IsInEnglish { get; set; }
+    }
+}

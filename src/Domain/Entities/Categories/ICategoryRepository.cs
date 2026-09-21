@@ -12,4 +12,6 @@ public interface ICategoryRepository : IRepository<Category>
         CancellationToken cancellationToken);
 
     Task<List<IdTitleDto<int>>> GetListForLookupAsync(CancellationToken cancellationToken);
+    Task<CategoryDot?> GetBySlugAsync(string slug, CancellationToken cancellationToken);
+    Task<List<SitemapUrlDto>> GetAllForSitemapAsync(CancellationToken cancellationToken);
 }

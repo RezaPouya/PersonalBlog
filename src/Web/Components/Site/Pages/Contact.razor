@@ -1,0 +1,134 @@
+@page "/contact"
+@layout Web.Components.Site.Layout.SiteLayout
+@rendermode InteractiveServer
+@using AppServices.Site.ContactMessages
+@using AppServices.Commons
+@using AppServices.Base
+@using AppServices.Options
+@using Microsoft.Extensions.Options
+@using Web.Components.Site.Shared
+@inject ICommandHandler<CreateContactMessageCommand, int> CreateHandler
+@inject ICaptchaService CaptchaService
+@inject IOptions<SocialLinksSettings> SocialLinksOptions
+
+<SeoHead Title="تماس با من" Description="سؤالی دارید یا می‌خواهید همکاری کنیم؟ پیام بگذارید." />
+
+<section class="mb-8">
+    <h1 class="text-2xl md:text-3xl font-bold mb-2">تماس با من</h1>
+    <p class="text-fg-muted dark:text-fg-muted-dark text-sm">سؤالی دارید یا می‌خواهید همکاری کنیم؟ پیام بگذارید.</p>
+</section>
+
+@if (_sent)
+{
+    <div class="border border-line dark:border-line-dark rounded-xl p-6 text-center">
+        <p class="mb-2">پیام شما ارسال شد. ممنون از تماس‌تان — به‌زودی پاسخ می‌دهم.</p>
+        <button type="button" class="text-sm font-mono text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition" @onclick="ResetForm">ارسال پیام دیگر</button>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="mb-4 text-sm text-red-500">@_message</div>
+    }
+
+    <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+        <DataAnnotationsValidator />
+        <div class="grid sm:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm mb-1">نام *</label>
+                <InputText class="w-full rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" @bind-Value="_form.FullName" />
+                <ValidationMessage For="() => _form.FullName" class="text-xs text-red-500" />
+            </div>
+            <div>
+                <label class="block text-sm mb-1">ایمیل *</label>
+                <InputText class="w-full rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" dir="ltr" @bind-Value="_form.Email" />
+                <ValidationMessage For="() => _form.Email" class="text-xs text-red-500" />
+            </div>
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm mb-1">موبایل (اختیاری)</label>
+            <InputText class="w-full rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" dir="ltr" @bind-Value="_form.Cellphone" />
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm mb-1">موضوع *</label>
+            <InputText class="w-full rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" @bind-Value="_form.Subject" />
+            <ValidationMessage For="() => _form.Subject" class="text-xs text-red-500" />
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm mb-1">متن پیام *</label>
+            <InputTextArea class="w-full rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" rows="6" @bind-Value="_form.Body" />
+            <ValidationMessage For="() => _form.Body" class="text-xs text-red-500" />
+        </div>
+        <div class="flex items-center gap-3 mb-6">
+            <label class="text-sm font-mono text-fg-muted dark:text-fg-muted-dark whitespace-nowrap">@_captchaQuestion</label>
+            <input class="w-24 rounded-lg border border-line dark:border-line-dark bg-transparent px-3 py-2 text-sm" @bind="_form.CaptchaAnswer" />
+        </div>
+        <button type="submit" class="bg-fg dark:bg-fg-dark text-bg dark:text-bg-dark px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-accent dark:hover:bg-accent-dark transition disabled:opacity-50" disabled="@_submitting">
+            @(_submitting ? "در حال ارسال..." : "ارسال پیام")
+        </button>
+    </EditForm>
+
+    @if (!string.IsNullOrWhiteSpace(_social.Telegram) || !string.IsNullOrWhiteSpace(_social.LinkedIn))
+    {
+        <div class="mt-10 pt-6 border-t border-line dark:border-line-dark text-sm font-mono flex gap-5">
+            @if (!string.IsNullOrWhiteSpace(_social.Telegram))
+            {
+                <a href="@_social.Telegram" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">telegram</a>
+            }
+            @if (!string.IsNullOrWhiteSpace(_social.LinkedIn))
+            {
+                <a href="@_social.LinkedIn" target="_blank" rel="noopener" class="text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark transition">linkedin</a>
+            }
+        </div>
+    }
+}
+
+@code {
+    private CreateContactMessageCommand _form = new();
+    private bool _submitting;
+    private bool _sent;
+    private string? _message;
+    private string _captchaQuestion = "";
+    private SocialLinksSettings _social = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _social = SocialLinksOptions.Value;
+        await LoadCaptchaAsync();
+    }
+
+    private async Task LoadCaptchaAsync()
+    {
+        var (captchaId, question) = await CaptchaService.GenerateChallengeAsync(CancellationToken.None);
+        _form.CaptchaId = captchaId;
+        _captchaQuestion = question;
+    }
+
+    private async Task SubmitAsync()
+    {
+        _submitting = true;
+        _message = null;
+        try
+        {
+            await CreateHandler.Handle(_form, CancellationToken.None);
+            _sent = true;
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            await LoadCaptchaAsync();
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private void ResetForm()
+    {
+        _form = new CreateContactMessageCommand();
+        _sent = false;
+        _ = LoadCaptchaAsync();
+    }
+}

@@ -1,0 +1,209 @@
+@typeparam TItem where TItem : class
+@using Utilities.Dtos
+
+<div class="dynamic-grid">
+    @if (Toolbar is not null)
+    {
+        <div class="mb-3">@Toolbar</div>
+    }
+
+    @if (!string.IsNullOrEmpty(_loadError))
+    {
+        <div class="alert alert-danger">@_loadError</div>
+    }
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0 position-relative">
+            @if (_loading)
+            {
+                <div class="dynamic-grid-overlay d-flex align-items-center justify-content-center"
+                     style="position:absolute;inset:0;background:rgba(255,255,255,.6);z-index:2;">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            }
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            @foreach (var col in Columns)
+                            {
+                                <th style="@(col.Width is not null ? $"width:{col.Width}" : null)">
+                                    @if (col.Sortable && !string.IsNullOrWhiteSpace(col.PropertyName))
+                                    {
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-dark"
+                                                @onclick="() => ToggleSortAsync(col.PropertyName!)">
+                                            @col.Header
+                                            @if (_sort?.PropertyName == col.PropertyName)
+                                            {
+                                                <span>@(_sort.Ascending ? "▲" : "▼")</span>
+                                            }
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        @col.Header
+                                    }
+                                </th>
+                            }
+                            @if (RowActions is not null)
+                            {
+                                <th style="width:170px"></th>
+                            }
+                        </tr>
+                        @if (Columns.Any(c => c.Filterable))
+                        {
+                            <tr>
+                                @foreach (var col in Columns)
+                                {
+                                    <th>
+                                        @if (col.Filterable && !string.IsNullOrWhiteSpace(col.PropertyName))
+                                        {
+                                            <input type="text" class="form-control form-control-sm" dir="auto" placeholder="فیلتر..."
+                                                   value="@GetFilterValue(col.PropertyName!)"
+                                                   @onchange="e => SetFilterAsync(col.PropertyName!, col.FilterOperation, e.Value?.ToString())" />
+                                        }
+                                    </th>
+                                }
+                                @if (RowActions is not null)
+                                {
+                                    <th></th>
+                                }
+                            </tr>
+                        }
+                    </thead>
+                    <tbody>
+                        @if (_items.Count == 0 && !_loading)
+                        {
+                            <tr>
+                                <td colspan="@(Columns.Count + (RowActions is not null ? 1 : 0))" class="text-center text-muted py-4">
+                                    موردی یافت نشد.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in _items)
+                            {
+                                <tr>
+                                    @foreach (var col in Columns)
+                                    {
+                                        <td>
+                                            @if (col.CellTemplate is not null)
+                                            {
+                                                @col.CellTemplate(item)
+                                            }
+                                            else if (col.CellText is not null)
+                                            {
+                                                @col.CellText(item)
+                                            }
+                                        </td>
+                                    }
+                                    @if (RowActions is not null)
+                                    {
+                                        <td class="text-nowrap">@RowActions(item)</td>
+                                    }
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if (_totalPages > 1)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <small class="text-muted">جمع: @_total مورد</small>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary" disabled="@(_page <= 1)" @onclick="() => LoadPageAsync(_page - 1)">قبلی</button>
+                    <span class="btn btn-outline-secondary disabled">@_page / @_totalPages</span>
+                    <button class="btn btn-outline-secondary" disabled="@(_page >= _totalPages)" @onclick="() => LoadPageAsync(_page + 1)">بعدی</button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public List<GridColumn<TItem>> Columns { get; set; } = new();
+
+    /// <summary>تابعی که یک GridDataSourceRequest می‌گیرد و نتیجه را برمی‌گرداند —
+    /// معمولاً یک لامبدای ساده که به Handler موجود (IQueryHandler) وصل می‌شود.</summary>
+    [Parameter, EditorRequired] public Func<GridDataSourceRequest, Task<GridDataSourceResult<TItem>>> LoadData { get; set; } = default!;
+
+    [Parameter] public RenderFragment<TItem>? RowActions { get; set; }
+    [Parameter] public RenderFragment? Toolbar { get; set; }
+    [Parameter] public int PageSize { get; set; } = 15;
+
+    private List<TItem> _items = new();
+    private bool _loading = true;
+    private string? _loadError;
+    private int _page = 1;
+    private int _totalPages;
+    private int _total;
+    private GridSortDto? _sort;
+    private readonly List<GridPropertyFilterDto> _filters = new();
+
+    protected override async Task OnInitializedAsync() => await LoadPageAsync(1);
+
+    /// <summary>برای بازخوانی دستی از بیرون (مثلاً بعد از حذف یک ردیف).</summary>
+    public Task RefreshAsync() => LoadPageAsync(_page);
+
+    private async Task LoadPageAsync(int page)
+    {
+        _loading = true;
+        _loadError = null;
+        _page = page;
+        StateHasChanged();
+
+        try
+        {
+            var request = new GridDataSourceRequest(_page, PageSize);
+            request.InputParams.Sort = _sort;
+            request.InputParams.Filters = _filters.ToList();
+
+            var result = await LoadData(request);
+
+            _items = result.Data?.ToList() ?? new();
+            _totalPages = result.TotalPages;
+            _total = result.Total;
+        }
+        catch (Exception ex)
+        {
+            _loadError = $"خطا در بارگذاری اطلاعات: {ex.Message}";
+            _items = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task ToggleSortAsync(string propertyName)
+    {
+        if (_sort?.PropertyName == propertyName)
+        {
+            _sort.Ascending = !_sort.Ascending;
+        }
+        else
+        {
+            _sort = new GridSortDto { PropertyName = propertyName, Ascending = true };
+        }
+
+        return LoadPageAsync(1);
+    }
+
+    private string? GetFilterValue(string propertyName) =>
+        _filters.FirstOrDefault(f => f.PropertyName == propertyName)?.Value;
+
+    private Task SetFilterAsync(string propertyName, string operation, string? value)
+    {
+        _filters.RemoveAll(f => f.PropertyName == propertyName);
+
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            _filters.Add(new GridPropertyFilterDto { PropertyName = propertyName, Operation = operation, Value = value });
+        }
+
+        return LoadPageAsync(1);
+    }
+}

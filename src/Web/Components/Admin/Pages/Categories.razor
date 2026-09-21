@@ -2,80 +2,235 @@
 @layout Web.Components.Admin.Layout.AdminLayout
 @rendermode InteractiveServer
 @using AppServices.Admin.Categories.Grid
+@using AppServices.Admin.Categories.Create
+@using AppServices.Admin.Categories.Update
+@using AppServices.Admin.Categories.Delete
+@using AppServices.Admin.Categories.Read
 @using AppServices.Base
-@using PersonalBlog.Domain.Entities.Categories.Dtos;
+@using PersonalBlog.Domain.Entities.Categories.Dtos
 @using Utilities.Dtos
-
+@using Web.Components.Admin.Shared
 @inject IQueryHandler<GetCategoryListAsGridQuery, GridDataSourceResult<CategoryGridDto>> GridHandler
+@inject IQueryHandler<GetCategoryQuery, CategoryDot> GetHandler
+@inject ICommandHandler<CreateCategoryCommand, int> CreateHandler
+@inject ICommandHandler<UpdateCategoryCommand, int> UpdateHandler
+@inject ICommandHandler<DeleteCategoryCommand, int> DeleteHandler
+@inject IJSRuntime JS
 
 <PageTitle>دسته‌بندی‌ها | ادمین</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h3 mb-0">مدیریت دسته‌بندی‌ها</h1>
-    <button class="btn btn-success" @onclick="ShowCreate">+ جدید</button>
+    <button class="btn btn-success" @onclick="ShowCreate">+ دسته‌بندی جدید</button>
 </div>
 
-@if (_loading)
+@if (!string.IsNullOrEmpty(_message))
 {
-    <p>در حال بارگذاری...</p>
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+    </div>
 }
-else
+
+<DynamicGrid @ref="_grid" TItem="CategoryGridDto" PageSize="15" Columns="_columns" LoadData="LoadGridAsync">
+    <RowActions Context="item">
+        <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditAsync(item.Id)">ویرایش</button>
+        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteAsync(item)">حذف</button>
+    </RowActions>
+</DynamicGrid>
+
+@if (_showModal)
 {
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>شناسه</th>
-                    <th>عنوان</th>
-                    <th>انگلیسی</th>
-                    <th>تعداد پست</th>
-                    <th>تاریخ ایجاد</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in _items)
-                {
-                    <tr>
-                        <td>@item.Id</td>
-                        <td>@item.Title</td>
-                        <td>@(item.IsInEnglish ? "بله" : "خیر")</td>
-                        <td>@item.PostsCount</td>
-                        <td>@item.CreatedAtPersian</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary">ویرایش</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_form.Id == 0 ? "دسته‌بندی جدید" : "ویرایش دسته‌بندی")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(_formError))
+                        {
+                            <div class="alert alert-danger">@_formError</div>
+                        }
+                        <div class="mb-3">
+                            <label class="form-label">عنوان *</label>
+                            <InputText class="form-control" @bind-Value="_form.Title" />
+                            <ValidationMessage For="() => _form.Title" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">اسلاگ *</label>
+                            <InputText class="form-control" dir="ltr" @bind-Value="_form.Slug" />
+                            <ValidationMessage For="() => _form.Slug" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">توضیحات</label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="_form.Description" />
+                        </div>
+                        <div class="form-check">
+                            <InputCheckbox class="form-check-input" id="catEn" @bind-Value="_form.IsInEnglish" />
+                            <label class="form-check-label" for="catEn">انگلیسی است؟</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" @onclick="CloseModal">انصراف</button>
+                        <button type="submit" class="btn btn-primary" disabled="@_saving">
+                            @(_saving ? "در حال ذخیره..." : "ذخیره")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
     </div>
 }
 
 @code {
-    private List<CategoryGridDto> _items = new();
-    private bool _loading = true;
+    private DynamicGrid<CategoryGridDto>? _grid;
+    private List<GridColumn<CategoryGridDto>> _columns = new();
+    private string? _message;
+    private bool _isError;
 
-    protected override async Task OnInitializedAsync()
+    private bool _showModal;
+    private bool _saving;
+    private string? _formError;
+    private CategoryFormModel _form = new();
+
+    protected override void OnInitialized()
     {
+        _columns = new List<GridColumn<CategoryGridDto>>
+        {
+            new() { Header = "شناسه", PropertyName = nameof(CategoryGridDto.Id), Sortable = true, Width = "70px",
+                    CellText = c => c.Id.ToString() },
+            new() { Header = "عنوان", PropertyName = nameof(CategoryGridDto.Title), Sortable = true, Filterable = true,
+                    CellText = c => c.Title },
+            new() { Header = "انگلیسی", PropertyName = nameof(CategoryGridDto.IsInEnglish), Sortable = true,
+                    CellText = c => c.IsInEnglish ? "بله" : "خیر" },
+            new() { Header = "تعداد پست", PropertyName = nameof(CategoryGridDto.PostsCount), Sortable = true,
+                    CellText = c => c.PostsCount.ToString() },
+            new() { Header = "تاریخ ایجاد", PropertyName = nameof(CategoryGridDto.CreatedAt), Sortable = true,
+                    CellText = c => c.CreatedAtPersian },
+        };
+    }
+
+    private async Task<GridDataSourceResult<CategoryGridDto>> LoadGridAsync(GridDataSourceRequest request)
+    {
+        var query = new GetCategoryListAsGridQuery
+        {
+            Page = request.Page,
+            PageSize = request.PageSize,
+            InputParams = request.InputParams
+        };
+        return await GridHandler.Handle(query, CancellationToken.None);
+    }
+
+    private void ShowCreate()
+    {
+        _form = new CategoryFormModel();
+        _formError = null;
+        _showModal = true;
+    }
+
+    private async Task ShowEditAsync(int id)
+    {
+        _formError = null;
         try
         {
-            var result = await GridHandler.Handle(new GetCategoryListAsGridQuery
+            var category = await GetHandler.Handle(new GetCategoryQuery { Id = id }, CancellationToken.None);
+            _form = new CategoryFormModel
             {
-                Page = 1,
-                PageSize = 50
-            }, CancellationToken.None);
-            _items = result.Data?.ToList() ?? new();
+                Id = category.Id,
+                Title = category.Title,
+                Slug = category.Slug,
+                Description = category.Description,
+                IsInEnglish = category.IsInEnglish
+            };
+            _showModal = true;
         }
-        catch
+        catch (Exception ex)
         {
-            _items = new();
-        }
-        finally
-        {
-            _loading = false;
+            _message = ex.Message;
+            _isError = true;
         }
     }
 
-    private void ShowCreate() { /* TODO: modal or navigate */ }
+    private void CloseModal() => _showModal = false;
+
+    private async Task SubmitAsync()
+    {
+        _saving = true;
+        _formError = null;
+        try
+        {
+            if (_form.Id == 0)
+            {
+                await CreateHandler.Handle(new CreateCategoryCommand
+                {
+                    Title = _form.Title,
+                    Slug = _form.Slug,
+                    Description = _form.Description,
+                    IsInEnglish = _form.IsInEnglish
+                }, CancellationToken.None);
+                _message = "دسته‌بندی ایجاد شد.";
+            }
+            else
+            {
+                await UpdateHandler.Handle(new UpdateCategoryCommand
+                {
+                    Id = _form.Id,
+                    Title = _form.Title,
+                    Slug = _form.Slug,
+                    Description = _form.Description,
+                    IsInEnglish = _form.IsInEnglish
+                }, CancellationToken.None);
+                _message = "تغییرات ذخیره شد.";
+            }
+
+            _isError = false;
+            _showModal = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync(CategoryGridDto item)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"دسته‌بندی «{item.Title}» حذف شود؟");
+        if (!confirmed) return;
+
+        try
+        {
+            await DeleteHandler.Handle(new DeleteCategoryCommand { Id = item.Id }, CancellationToken.None);
+            _message = $"دسته‌بندی «{item.Title}» حذف شد.";
+            _isError = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+
+    private class CategoryFormModel
+    {
+        public int Id { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "عنوان اجباری است")]
+        public string Title { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "اسلاگ اجباری است")]
+        public string Slug { get; set; } = "";
+
+        public string? Description { get; set; }
+        public bool IsInEnglish { get; set; }
+    }
 }

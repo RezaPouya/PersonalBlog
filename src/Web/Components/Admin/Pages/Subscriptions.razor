@@ -1,0 +1,77 @@
+@page "/admin/subscriptions"
+@layout Web.Components.Admin.Layout.AdminLayout
+@rendermode InteractiveServer
+@using AppServices.Admin.Subscriptions.Grid
+@using AppServices.Admin.Subscriptions.Delete
+@using AppServices.Base
+@using PersonalBlog.Domain.Entities.Subscriptions.Dtos
+@using Utilities.Dtos
+@using Web.Components.Admin.Shared
+@inject IQueryHandler<GetSubscriptionListAsGridQuery, GridDataSourceResult<SubscriptionGridDto>> GridHandler
+@inject ICommandHandler<DeleteSubscriptionCommand, int> DeleteHandler
+@inject IJSRuntime JS
+
+<PageTitle>مشترکین خبرنامه | ادمین</PageTitle>
+
+<h1 class="h3 mb-4">مشترکین خبرنامه</h1>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert @(_isError ? "alert-danger" : "alert-success") alert-dismissible fade show">
+        @_message
+        <button type="button" class="btn-close" @onclick="() => _message = null"></button>
+    </div>
+}
+
+<DynamicGrid @ref="_grid" TItem="SubscriptionGridDto" PageSize="20" Columns="_columns" LoadData="LoadGridAsync">
+    <RowActions Context="item">
+        <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDeleteAsync(item)">حذف</button>
+    </RowActions>
+</DynamicGrid>
+
+@code {
+    private DynamicGrid<SubscriptionGridDto>? _grid;
+    private List<GridColumn<SubscriptionGridDto>> _columns = new();
+    private string? _message;
+    private bool _isError;
+
+    protected override void OnInitialized()
+    {
+        _columns = new List<GridColumn<SubscriptionGridDto>>
+        {
+            new() { Header = "ایمیل", PropertyName = nameof(SubscriptionGridDto.Email), Sortable = true, Filterable = true,
+                    CellText = s => s.Email },
+
+            new() { Header = "وضعیت", CellTemplate = s =>
+                @<span class="badge @(s.IsActive ? "bg-success" : "bg-secondary")">@(s.IsActive ? "فعال" : "لغو شده")</span> },
+
+            new() { Header = "تاریخ عضویت", PropertyName = nameof(SubscriptionGridDto.CreatedAt), Sortable = true,
+                    CellTemplate = s => @<small>@s.CreatedAtPersian</small> },
+        };
+    }
+
+    private async Task<GridDataSourceResult<SubscriptionGridDto>> LoadGridAsync(GridDataSourceRequest request)
+    {
+        var query = new GetSubscriptionListAsGridQuery { Page = request.Page, PageSize = request.PageSize, InputParams = request.InputParams };
+        return await GridHandler.Handle(query, CancellationToken.None);
+    }
+
+    private async Task ConfirmDeleteAsync(SubscriptionGridDto item)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"مشترک «{item.Email}» حذف شود؟");
+        if (!confirmed) return;
+
+        try
+        {
+            await DeleteHandler.Handle(new DeleteSubscriptionCommand { Id = item.Id }, CancellationToken.None);
+            _message = "مشترک حذف شد.";
+            _isError = false;
+            if (_grid is not null) await _grid.RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _isError = true;
+        }
+    }
+}

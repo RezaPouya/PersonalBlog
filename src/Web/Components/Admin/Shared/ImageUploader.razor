@@ -1,0 +1,111 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using AppServices.Commons
+@inject IFileStorageService FileStorage
+
+<div class="image-uploader">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label class="form-label">@Label</label>
+    }
+    <div class="d-flex align-items-start gap-3 flex-wrap">
+        <div class="image-uploader-preview border rounded d-flex align-items-center justify-content-center bg-light"
+             style="width:110px;height:110px;overflow:hidden;flex-shrink:0;">
+            @if (!string.IsNullOrWhiteSpace(Value))
+            {
+                <img src="@Value" alt="پیش‌نمایش تصویر" style="width:100%;height:100%;object-fit:cover;" />
+            }
+            else
+            {
+                <span class="text-muted small">بدون تصویر</span>
+            }
+        </div>
+
+        <div class="flex-grow-1" style="min-width:220px;">
+            <InputFile OnChange="OnFileSelectedAsync" class="form-control form-control-sm" accept="image/*" disabled="@_uploading" />
+
+            @if (_uploading)
+            {
+                <div class="text-muted small mt-1">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                    در حال آپلود...
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_error))
+            {
+                <div class="text-danger small mt-1">@_error</div>
+            }
+
+            <div class="input-group input-group-sm mt-2">
+                <span class="input-group-text">آدرس</span>
+                <input type="text" class="form-control" dir="ltr" value="@Value"
+                       placeholder="یا آدرس تصویر را مستقیم وارد کنید"
+                       @onchange="OnUrlTypedAsync" />
+                @if (!string.IsNullOrWhiteSpace(Value))
+                {
+                    <button type="button" class="btn btn-outline-danger" @onclick="RemoveImageAsync">حذف</button>
+                }
+            </div>
+            <div class="form-text">فرمت مجاز: jpg، png، webp، gif — حداکثر ۵ مگابایت</div>
+        </div>
+    </div>
+</div>
+
+@code {
+    /// <summary>آدرس نسبی تصویر فعلی (مثلاً /uploads/posts/xxx.jpg) — دو‌طرفه با @bind-Value.</summary>
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter] public string Label { get; set; } = "تصویر";
+
+    /// <summary>زیرپوشه‌ی ذخیره‌سازی، مثلاً "posts" یا "projects" یا "courses".</summary>
+    [Parameter] public string SubFolder { get; set; } = "misc";
+
+    private bool _uploading;
+    private string? _error;
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        var file = e.File;
+        if (file is null)
+            return;
+
+        if (!FileStorage.IsAllowedImage(file.Name, file.Size))
+        {
+            _error = "فرمت یا حجم تصویر مجاز نیست (حداکثر ۵ مگابایت، jpg/png/webp/gif).";
+            return;
+        }
+
+        _uploading = true;
+        try
+        {
+            const long maxReadSize = 5 * 1024 * 1024;
+            await using var stream = file.OpenReadStream(maxReadSize);
+            var url = await FileStorage.SaveAsync(stream, file.Name, SubFolder);
+
+            Value = url;
+            await ValueChanged.InvokeAsync(Value);
+        }
+        catch (Exception ex)
+        {
+            _error = $"خطا در آپلود تصویر: {ex.Message}";
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    private async Task OnUrlTypedAsync(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString();
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private async Task RemoveImageAsync()
+    {
+        Value = null;
+        _error = null;
+        await ValueChanged.InvokeAsync(Value);
+    }
+}
