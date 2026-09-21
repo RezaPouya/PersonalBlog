@@ -1,10 +1,7 @@
 using AppServices;
 using AppServices.Admin.Auth;
 using AppServices.Commons;
-<<<<<<< HEAD
 using AppServices.Options;
-=======
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 using Infrastructure.Persistence.SqlServer;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,6 +12,7 @@ using PersonalBlog.Domain.Entities.Categories;
 using PersonalBlog.Domain.Entities.Courses;
 using PersonalBlog.Domain.Entities.Identities;
 using PersonalBlog.Domain.Entities.Posts;
+using PersonalBlog.Domain.Entities.Tags;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
@@ -140,7 +138,6 @@ app.MapGet("/admin/files/download", (string path, IWebHostEnvironment env) =>
 })
 .RequireAuthorization("AdminOnly");
 
-<<<<<<< HEAD
 // =================================================================
 
 // ==================== SEO: robots.txt / sitemap.xml / rss.xml ====================
@@ -161,6 +158,7 @@ app.MapGet("/sitemap.xml", async (
     IPostRepository postRepository,
     ICategoryRepository categoryRepository,
     ICourseRepository courseRepository,
+    ITagRepository tagRepository,
     CancellationToken cancellationToken) =>
 {
     var baseUrl = $"{request.Scheme}://{request.Host}";
@@ -173,6 +171,7 @@ app.MapGet("/sitemap.xml", async (
         (baseUrl + "/projects", null),
         (baseUrl + "/about", null),
         (baseUrl + "/contact", null),
+        (baseUrl + "/search", null),
     };
 
     var posts = await postRepository.GetAllPublishedForSitemapAsync(cancellationToken);
@@ -183,6 +182,9 @@ app.MapGet("/sitemap.xml", async (
 
     var courses = await courseRepository.GetAllPublishedForSitemapAsync(cancellationToken);
     urls.AddRange(courses.Select(c => (baseUrl + $"/course/{c.Slug}", (DateTime?)c.UpdatedAt)));
+
+    var tags = await tagRepository.GetAllForSitemapAsync(cancellationToken);
+    urls.AddRange(tags.Select(t => (baseUrl + $"/tag/{t.Slug}", (DateTime?)t.UpdatedAt)));
 
     XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
     var doc = new XDocument(
@@ -240,8 +242,6 @@ app.MapGet("/rss.xml", async (
     return Results.File(ms.ToArray(), "application/rss+xml");
 });
 
-=======
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 // =================================================================
 
 app.MapRazorComponents<App>()

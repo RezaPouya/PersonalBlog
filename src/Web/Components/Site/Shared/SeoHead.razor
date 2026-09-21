@@ -1,5 +1,9 @@
 @using Microsoft.AspNetCore.Components.Web
+@using System.Text.Json
+@using AppServices.Options
+@using Microsoft.Extensions.Options
 @inject NavigationManager Nav
+@inject IOptions<SiteSettings> SiteSettingsOptions
 
 <PageTitle>@Title</PageTitle>
 <HeadContent>
@@ -30,6 +34,13 @@
     {
         <meta name="twitter:description" content="@Description" />
     }
+
+    <!-- داده‌ی ساخت‌یافته (Schema.org) برای نتایج بهتر در گوگل -->
+    <script type="application/ld+json">@((MarkupString)WebsiteJsonLd)</script>
+    @if (Type == "article")
+    {
+        <script type="application/ld+json">@((MarkupString)ArticleJsonLd)</script>
+    }
 </HeadContent>
 
 @code {
@@ -40,8 +51,59 @@
     /// <summary>"website" برای صفحات عادی، "article" برای صفحه‌ی پست.</summary>
     [Parameter] public string Type { get; set; } = "website";
 
+    // فقط برای Type="article" پر می‌شوند
+    [Parameter] public DateTime? PublishedAt { get; set; }
+    [Parameter] public DateTime? ModifiedAt { get; set; }
+    [Parameter] public string? AuthorName { get; set; }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        // Encoder پیش‌فرض System.Text.Json کاراکترهای HTML-ناامن (< > &) را خودکار
+        // اسکیپ می‌کند، پس جاسازی خروجی داخل تگ <script> امن است.
+        WriteIndented = false
+    };
+
     private string? AbsoluteImageUrl =>
         string.IsNullOrWhiteSpace(ImageUrl) ? null :
         ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? ImageUrl :
         new Uri(new Uri(Nav.BaseUri), ImageUrl).ToString();
+
+    private string WebsiteJsonLd
+    {
+        get
+        {
+            var site = SiteSettingsOptions.Value;
+            var data = new Dictionary<string, object?>
+            {
+                ["@context"] = "https://schema.org",
+                ["@type"] = "WebSite",
+                ["name"] = site.Title,
+                ["description"] = site.Description,
+                ["url"] = Nav.BaseUri
+            };
+            return JsonSerializer.Serialize(data, JsonOptions);
+        }
+    }
+
+    private string ArticleJsonLd
+    {
+        get
+        {
+            var site = SiteSettingsOptions.Value;
+            var data = new Dictionary<string, object?>
+            {
+                ["@context"] = "https://schema.org",
+                ["@type"] = "Article",
+                ["headline"] = Title,
+                ["description"] = Description,
+                ["image"] = AbsoluteImageUrl,
+                ["datePublished"] = PublishedAt?.ToString("o"),
+                ["dateModified"] = (ModifiedAt ?? PublishedAt)?.ToString("o"),
+                ["author"] = new Dictionary<string, object?> { ["@type"] = "Person", ["name"] = AuthorName ?? site.Title },
+                ["publisher"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = site.Title },
+                ["mainEntityOfPage"] = Nav.Uri
+            };
+            return JsonSerializer.Serialize(data, JsonOptions);
+        }
+    }
 }

@@ -19,10 +19,7 @@ namespace AppServices
             services.Configure<SocialLinksSettings>(configuration.GetSection("SocialLinks"));
             services.Configure<CacheSettings>(configuration.GetSection("CacheSettings"));
             services.Configure<FileStorageSettings>(configuration.GetSection("FileStorage"));
-<<<<<<< HEAD
             services.Configure<SiteSettings>(configuration.GetSection("SiteSettings"));
-=======
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 
             services.AddTransient<IHtmlSanitizerService, HtmlSanitizerService>();
             services.AddScoped<ICaptchaService, MathCaptchaService>();

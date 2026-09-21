@@ -15,7 +15,8 @@
 <SeoHead Title="@(_post?.MetaTitle ?? _post?.Title ?? "مطالب")"
          Description="@(_post?.MetaDescription ?? _post?.Summary)"
          ImageUrl="@_post?.CoverImageUrl"
-         Type="article" />
+         Type="article"
+         PublishedAt="_post?.PublishedAt" />
 
 @if (_loading)
 {
@@ -23,48 +24,28 @@
         <div class="h-3 bg-line dark:bg-line-dark rounded w-24"></div>
         <div class="h-8 bg-line dark:bg-line-dark rounded w-3/4"></div>
         <div class="h-4 bg-line dark:bg-line-dark rounded w-1/2"></div>
-<<<<<<< HEAD
         <div class="h-48 bg-line dark:bg-line-dark rounded-xl"></div>
-=======
-        <div class="h-48 bg-line dark:bg-line-dark rounded-2xl"></div>
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
     </div>
 }
 else if (_post is null)
 {
     <div class="text-center py-20">
-<<<<<<< HEAD
         <p class="text-fg-muted dark:text-fg-muted-dark mb-3">مطلب یافت نشد.</p>
         <a href="/" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">بازگشت به خانه</a>
-=======
-        <p class="text-ink-soft dark:text-ink-softdark mb-3">مطلب یافت نشد.</p>
-        <a href="/" class="text-teal dark:text-teal-dark hover:text-gold dark:hover:text-gold-dark transition">بازگشت به خانه</a>
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
     </div>
 }
 else
 {
     <article>
-<<<<<<< HEAD
         <div class="mb-4 flex items-center gap-2 text-xs font-mono text-fg-muted dark:text-fg-muted-dark">
             <a href="/" class="hover:text-accent dark:hover:text-accent-dark transition">~</a>
             <span>/</span>
             <a href="/category/@_post.CategorySlug" class="text-accent2 dark:text-accent2-dark hover:text-accent dark:hover:text-accent-dark transition">@_post.CategoryTitle</a>
-=======
-        <div class="mb-4 flex items-center gap-2 text-sm text-ink-soft dark:text-ink-softdark">
-            <a href="/" class="hover:text-gold dark:hover:text-gold-dark transition">خانه</a>
-            <span>/</span>
-            <span class="text-teal dark:text-teal-dark">@_post.CategoryTitle</span>
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
         </div>
 
         <h1 class="text-2xl md:text-3xl font-bold mb-3 leading-tight">@_post.Title</h1>
 
-<<<<<<< HEAD
         <div class="flex flex-wrap items-center gap-3 text-xs font-mono text-fg-muted dark:text-fg-muted-dark mb-6 pb-6 border-b border-line dark:border-line-dark">
-=======
-        <div class="flex flex-wrap items-center gap-3 text-xs text-ink-soft dark:text-ink-softdark mb-6 pb-6 border-b border-line dark:border-line-dark">
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
             @if (_post.PublishedAt.HasValue)
             {
                 <span>@_post.PublishedAt.Value.ToString("yyyy-MM-dd")</span>
@@ -74,11 +55,7 @@ else
 
         @if (!string.IsNullOrEmpty(_post.CoverImageUrl))
         {
-<<<<<<< HEAD
             <img src="@_post.CoverImageUrl" alt="@_post.Title" class="w-full rounded-xl mb-8 object-cover max-h-96" />
-=======
-            <img src="@_post.CoverImageUrl" alt="@_post.Title" class="w-full rounded-2xl mb-8 object-cover max-h-96" />
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
         }
 
         <div class="post-content mb-8">
@@ -87,17 +64,10 @@ else
 
         @if (_post.Tags.Any())
         {
-<<<<<<< HEAD
             <div class="flex flex-wrap gap-2 pt-6 border-t border-line dark:border-line-dark mb-10">
                 @foreach (var tagId in _post.TagIds.Zip(_post.Tags, (id, title) => (id, title)))
                 {
                     <a href="/tag/@tagId.id" class="px-3 py-1 text-xs font-mono rounded-lg border border-line dark:border-line-dark text-fg-muted dark:text-fg-muted-dark hover:text-accent dark:hover:text-accent-dark hover:border-accent dark:hover:border-accent-dark transition">#@tagId.title</a>
-=======
-            <div class="flex flex-wrap gap-2 pt-6 border-t border-line dark:border-line-dark">
-                @foreach (var tag in _post.Tags)
-                {
-                    <span class="px-3 py-1 text-xs rounded-full border border-line dark:border-line-dark text-ink-soft dark:text-ink-softdark">#@tag</span>
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
                 }
             </div>
         }

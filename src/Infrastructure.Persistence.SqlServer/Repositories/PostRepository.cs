@@ -62,7 +62,6 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
                 Id = p.Id,
                 CategoryId = p.CategoryId,
                 CategoryTitle = p.Category.Title,
-                CategorySlug = p.Category.Slug,
                 OgImageUrl = p.OgImageUrl,
                 PublishedAt = p.PublishedAt,
                 Slug = p.Slug,
@@ -84,7 +83,6 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
                 Summary = p.Summary,
                 UpdatedAt = p.UpdatedAt,
                 TagIds = p.PostTags.Select(p => p.TagId).ToList(),
-                Tags = p.PostTags.Select(p => p.Tag.Title).ToList(),
             }).
             FirstOrDefaultAsync(cancellationToken);
 
@@ -128,7 +126,6 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
         }
     }
 
-<<<<<<< HEAD
     // ============================ سمت سایت عمومی ============================
 
     public async Task<List<PostSummaryDto>> GetLatestPublishedAsync(int count, bool? isInEnglish, CancellationToken cancellationToken)
@@ -258,80 +255,48 @@ public class PostRepository(AppDbContext dbContext) : RepositoryBase<Post>(dbCon
                 ViewCount = p.ViewCount
             })
             .ToListAsync(cancellationToken);
-=======
-    public async Task<List<PostDto>> GetLatestPublishedAsync(int count, bool? isInEnglish, CancellationToken cancellationToken)
-    {
-        return await base.DbContext.Posts.AsNoTracking()
-         .Where(p => p.IsPublished == true)
-         .OrderByDescending(p => p.PublishedAt)
-         .Take(count)
-          .Select(p => new PostDto
-          {
-              Id = p.Id,
-              CategoryId = p.CategoryId,
-              CategoryTitle = p.Category.Title,
-              CategorySlug = p.Category.Slug,
-              OgImageUrl = p.OgImageUrl,
-              PublishedAt = p.PublishedAt,
-              Slug = p.Slug,
-              TinyUrl = p.TinyUrl,
-              Title = p.Title,
-              Content = p.Content,
-              CoverImageUrl = p.CoverImageUrl,
-              CreatedAt = p.CreatedAt,
-              DeletedAt = p.DeletedAt,
-              IsCommentsEnabled = p.IsCommentsEnabled,
-              IsDeleted = p.IsDeleted,
-              IsInEnglish = p.IsInEnglish,
-              IsPublished = p.IsPublished,
-              MetaDescription = p.MetaDescription,
-              MetaTitle = p.MetaTitle,
-              PostCommentsCount = p.Comments.Count(),
-              RelatedPosts = p.RelatedPosts,
-              ViewCount = p.ViewCount,
-              Summary = p.Summary,
-              UpdatedAt = p.UpdatedAt,
-              TagIds = p.PostTags.Select(p => p.TagId).ToList(),
-              Tags = p.PostTags.Select(p => p.Tag.Title).ToList(),
-          }).ToListAsync(cancellationToken);
-
     }
 
-    public async Task<PostDto?> GetPublishedBySlugAsync(string slug, CancellationToken cancellationToken)
+    public async Task<PostListPageDto> SearchPublishedAsync(string query, int page, int pageSize, CancellationToken cancellationToken)
     {
-        return await base.DbContext.Posts.AsNoTracking()
-      .Where(p => p.IsPublished == true)
-      .Where(p => p.Slug == slug)
-      .OrderByDescending(p => p.PublishedAt)
-       .Select(p => new PostDto
-       {
-           Id = p.Id,
-           CategoryId = p.CategoryId,
-           CategoryTitle = p.Category.Title,
-           CategorySlug = p.Category.Slug,
-           OgImageUrl = p.OgImageUrl,
-           PublishedAt = p.PublishedAt,
-           Slug = p.Slug,
-           TinyUrl = p.TinyUrl,
-           Title = p.Title,
-           Content = p.Content,
-           CoverImageUrl = p.CoverImageUrl,
-           CreatedAt = p.CreatedAt,
-           DeletedAt = p.DeletedAt,
-           IsCommentsEnabled = p.IsCommentsEnabled,
-           IsDeleted = p.IsDeleted,
-           IsInEnglish = p.IsInEnglish,
-           IsPublished = p.IsPublished,
-           MetaDescription = p.MetaDescription,
-           MetaTitle = p.MetaTitle,
-           PostCommentsCount = p.Comments.Count(),
-           RelatedPosts = p.RelatedPosts,
-           ViewCount = p.ViewCount,
-           Summary = p.Summary,
-           UpdatedAt = p.UpdatedAt,
-           TagIds = p.PostTags.Select(p => p.TagId).ToList(),
-           Tags = p.PostTags.Select(p => p.Tag.Title).ToList(),
-       }).FirstOrDefaultAsync(cancellationToken);
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+
+        query = query?.Trim() ?? "";
+
+        var baseQuery = base.DbContext.Posts.AsNoTracking()
+            .Where(p => !p.IsDeleted && p.IsPublished);
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            // جستجوی ساده روی عنوان، خلاصه و محتوا (بدون نیاز به Full-Text Search جداگانه؛
+            // برای حجم یک وبلاگ شخصی کافی است).
+            baseQuery = baseQuery.Where(p =>
+                EF.Functions.Like(p.Title, $"%{query}%") ||
+                EF.Functions.Like(p.Summary, $"%{query}%") ||
+                EF.Functions.Like(p.Content, $"%{query}%"));
+        }
+
+        var total = await baseQuery.CountAsync(cancellationToken);
+
+        var items = await baseQuery
+            .OrderByDescending(p => p.PublishedAt ?? p.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(p => new PostSummaryDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Slug = p.Slug,
+                Summary = p.Summary,
+                CoverImageUrl = p.CoverImageUrl,
+                PublishedAt = p.PublishedAt,
+                CategoryTitle = p.Category.Title,
+                CategorySlug = p.Category.Slug,
+                ViewCount = p.ViewCount
+            })
+            .ToListAsync(cancellationToken);
+
+        return new PostListPageDto { Items = items, Page = page, PageSize = pageSize, Total = total };
     }
 }

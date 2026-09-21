@@ -22,7 +22,6 @@
                 extend: {
                     fontFamily: {
                         sans: ['Vazirmatn', 'Tahoma', 'sans-serif'],
-<<<<<<< HEAD
                         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
                     },
                     colors: {
@@ -35,30 +34,13 @@
                         accent: { DEFAULT: '#B5741A', dark: '#F2A73B' },
                         accent2: { DEFAULT: '#0F8F7E', dark: '#3DDBC4' },
                         line: { DEFAULT: '#E5E7EB', dark: '#1F2430' },
-=======
-                    },
-                    colors: {
-                        paper: { DEFAULT: '#FAF7F1', dark: '#14181F' },
-                        ink: { DEFAULT: '#1C2027', dark: '#EDE9DE', soft: '#5B5648', softdark: '#A39F91' },
-                        gold: { DEFAULT: '#B8892B', dark: '#D4A537' },
-                        teal: { DEFAULT: '#24555A', dark: '#4FA0A6' },
-                        line: { DEFAULT: '#E7E1D3', dark: '#2A2F38' },
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
                     }
                 }
             }
         }
     </script>
-    <!-- تعیین قالب پیش از رندر صفحه، تا هنگام بارگذاری چشمک قالب روشن دیده نشود.
-         پیش‌فرض سایت قالب تیره است؛ فقط اگر کاربر قبلاً «روشن» را انتخاب کرده باشد، روشن می‌ماند. -->
-    <script>
-        (function () {
-            var saved = localStorage.getItem('theme');
-            if (saved !== 'light') {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
+    <!-- مدیریت قالب روشن/تیره (توضیح کامل داخل خود فایل) -->
+    <script src="js/theme.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="alternate" type="application/rss+xml" title="فید RSS" href="/rss.xml" />
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -77,6 +59,15 @@
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script src="js/html-editor.js"></script>
+    <script>
+        // بعد از هر پیمایش داخلی Blazor (بدون رفرش کامل مرورگر)، قالب را دوباره اعمال کن
+        // تا کلاس dark پاک نشود. جزئیات کامل در wwwroot/js/theme.js.
+        Blazor.addEventListener('enhancedload', function () {
+            if (window.siteTheme) {
+                window.siteTheme.apply();
+            }
+        });
+    </script>
 </body>
 
 </html>

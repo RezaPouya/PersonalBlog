@@ -27,7 +27,6 @@ input, select, textarea {
 .post-content p { margin-bottom: 1.1rem; }
 .post-content ul, .post-content ol { margin: 0 0 1.1rem; padding-right: 1.5rem; }
 .post-content li { margin-bottom: .4rem; }
-<<<<<<< HEAD
 .post-content a { color: #0F8F7E; text-decoration: underline; text-underline-offset: 2px; }
 .dark .post-content a { color: #3DDBC4; }
 .post-content strong { font-weight: 700; }
@@ -41,21 +40,6 @@ input, select, textarea {
 .post-content pre {
     background: #0B0E14;
     color: #E6E8EB;
-=======
-.post-content a { color: #24555A; text-decoration: underline; text-underline-offset: 2px; }
-.dark .post-content a { color: #4FA0A6; }
-.post-content strong { font-weight: 700; }
-.post-content blockquote {
-    border-right: 3px solid #B8892B;
-    padding-right: 1rem;
-    color: #5B5648;
-    margin: 1.5rem 0;
-}
-.dark .post-content blockquote { border-color: #D4A537; color: #A39F91; }
-.post-content pre {
-    background: #1C2027;
-    color: #EDE9DE;
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
     padding: 1rem;
     border-radius: .75rem;
     overflow-x: auto;
@@ -63,7 +47,6 @@ input, select, textarea {
     direction: ltr;
     text-align: left;
     font-size: .85rem;
-<<<<<<< HEAD
     border: 1px solid #1F2430;
 }
 .post-content pre code { font-family: 'JetBrains Mono', 'Cascadia Code', 'Courier New', monospace; }
@@ -76,8 +59,4 @@ input, select, textarea {
     font-size: .9em;
 }
 .dark .post-content code:not(pre code) { color: #F2A73B; }
-=======
-}
-.post-content pre code { font-family: 'Cascadia Code', 'Courier New', monospace; }
->>>>>>> 85b1d15fc1b3e1d14dce5e1b74d218fa26ad86b6
 .post-content img { border-radius: .75rem; margin: 1.25rem 0; max-width: 100%; height: auto; }
